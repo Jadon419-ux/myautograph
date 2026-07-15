@@ -1,9 +1,11 @@
+import uuid
 from datetime import datetime, timedelta
 
 from sqlmodel import Session, select
 
 from app.database import create_db_and_tables, engine
 from app.models.autograph import Autograph, AutographRequest, AutographRequestStatus
+from app.models.autograph_transfer import AutographTransfer
 from app.models.celebrity import CelebrityProfile
 from app.models.concert import Concert, ConcertCelebrityLink
 from app.models.roster import ManagerRoster
@@ -110,11 +112,15 @@ def seed_demo_data() -> None:
             request_id=request.id,
             content_url="https://placehold.co/600x400?text=Autograph",
             caption="Thanks for the support!",
+            owner_user_id=fan.id,
+            verification_code=uuid.uuid4().hex[:12],
         )
         session.add(autograph)
-
         session.add(ManagerRoster(manager_id=manager.id, celebrity_id=celeb_profile_1.id))
+        session.commit()
+        session.refresh(autograph)
 
+        session.add(AutographTransfer(autograph_id=autograph.id, from_user_id=None, to_user_id=fan.id))
         session.commit()
 
     print("Seed complete. Demo accounts (all use password: demo1234):")
