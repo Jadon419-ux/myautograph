@@ -6,6 +6,7 @@ from app.deps import require_role
 from app.models.celebrity import CelebrityProfile
 from app.models.concert import Concert, ConcertCelebrityLink
 from app.models.user import RoleEnum, User
+from app.routers.celebrities import _to_read as _celebrity_to_read
 from app.schemas.concert import ConcertCreate, ConcertRead
 
 router = APIRouter(prefix="/concerts", tags=["concerts"])
@@ -15,7 +16,7 @@ def _to_read(session: Session, concert: Concert) -> ConcertRead:
     links = session.exec(
         select(ConcertCelebrityLink).where(ConcertCelebrityLink.concert_id == concert.id)
     ).all()
-    celebrities = [session.get(CelebrityProfile, link.celebrity_id) for link in links]
+    profiles = [session.get(CelebrityProfile, link.celebrity_id) for link in links]
     return ConcertRead(
         id=concert.id,
         agent_id=concert.agent_id,
@@ -23,7 +24,7 @@ def _to_read(session: Session, concert: Concert) -> ConcertRead:
         venue=concert.venue,
         event_date=concert.event_date,
         description=concert.description,
-        celebrities=[c for c in celebrities if c is not None],
+        celebrities=[_celebrity_to_read(session, p) for p in profiles if p is not None],
     )
 
 

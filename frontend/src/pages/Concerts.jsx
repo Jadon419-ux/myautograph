@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import client from "../api/client.js";
 
 export default function Concerts() {
@@ -21,7 +22,7 @@ export default function Concerts() {
 
       <div className="mt-8 space-y-4">
         {concerts.map((c) => (
-          <div key={c.id} className="card">
+          <Link key={c.id} to={`/concerts/${c.id}`} className="card block hover:shadow-md">
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-brand-charcoal">{c.title}</h2>
@@ -43,7 +44,7 @@ export default function Concerts() {
                 ))}
               </div>
             )}
-          </div>
+          </Link>
         ))}
       </div>
 

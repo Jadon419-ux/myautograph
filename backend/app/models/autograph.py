@@ -10,6 +10,11 @@ class AutographRequestStatus(str, Enum):
     declined = "declined"
 
 
+class AutographMedium(str, Enum):
+    digital = "digital"
+    physical = "physical"
+
+
 class AutographRequest(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     fan_id: int = Field(foreign_key="user.id")
@@ -25,4 +30,10 @@ class Autograph(SQLModel, table=True):
     request_id: int | None = Field(default=None, foreign_key="autographrequest.id")
     content_url: str
     caption: str = ""
+    medium: AutographMedium = AutographMedium.digital
+    recipient_name: str = ""
+    owner_user_id: int | None = Field(default=None, foreign_key="user.id")
+    verification_code: str = Field(unique=True, index=True)
+    is_publicly_visible: bool = True
+    issued_at: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)

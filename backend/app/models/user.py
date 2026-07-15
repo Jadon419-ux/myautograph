@@ -10,6 +10,7 @@ class RoleEnum(str, Enum):
     agent = "agent"
     manager = "manager"
     admin = "admin"
+    sales_agent = "sales_agent"
 
 
 class User(SQLModel, table=True):
@@ -18,4 +19,5 @@ class User(SQLModel, table=True):
     hashed_password: str
     full_name: str
     role: RoleEnum
+    avatar_url: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)

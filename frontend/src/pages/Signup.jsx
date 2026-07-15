@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 
 const ROLES = [
@@ -7,18 +7,23 @@ const ROLES = [
   { value: "celebrity", label: "Celebrity" },
   { value: "agent", label: "Agent" },
   { value: "manager", label: "Manager" },
+  { value: "sales_agent", label: "Ticket Sales Agent" },
 ];
 
 export default function Signup() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedRole = searchParams.get("role");
+  const initialRole = ROLES.some((r) => r.value === requestedRole) ? requestedRole : "fan";
   const [form, setForm] = useState({
     full_name: "",
     email: "",
     password: "",
-    role: "fan",
+    role: initialRole,
     stage_name: "",
     category: "",
+    referral_code: searchParams.get("ref") || "",
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -99,6 +104,22 @@ export default function Signup() {
             ))}
           </select>
         </div>
+
+        {form.role === "sales_agent" && (
+          <div>
+            <label className="label" htmlFor="referral_code">Invite code</label>
+            <input
+              id="referral_code"
+              required
+              className="input-field"
+              value={form.referral_code}
+              onChange={(e) => update("referral_code", e.target.value)}
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              You need an invite code from a celebrity to register as a Ticket Sales Agent.
+            </p>
+          </div>
+        )}
 
         {form.role === "celebrity" && (
           <>

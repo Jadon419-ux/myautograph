@@ -6,6 +6,7 @@ from app.deps import require_role
 from app.models.celebrity import CelebrityProfile
 from app.models.roster import ManagerRoster
 from app.models.user import RoleEnum, User
+from app.routers.celebrities import _to_read
 from app.schemas.celebrity import CelebrityRead
 from app.schemas.manager import CelebrityOnboardCreate
 from app.security import hash_password
@@ -22,7 +23,7 @@ def list_roster(
         select(ManagerRoster).where(ManagerRoster.manager_id == user.id)
     ).all()
     celebrities = [session.get(CelebrityProfile, link.celebrity_id) for link in links]
-    return [c for c in celebrities if c is not None]
+    return [_to_read(session, c) for c in celebrities if c is not None]
 
 
 @router.post("/roster", response_model=CelebrityRead)
@@ -57,4 +58,4 @@ def onboard_celebrity(
     session.add(ManagerRoster(manager_id=user.id, celebrity_id=profile.id))
     session.commit()
 
-    return profile
+    return _to_read(session, profile)

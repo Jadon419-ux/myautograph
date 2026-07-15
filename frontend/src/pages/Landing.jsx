@@ -7,21 +7,25 @@ const roles = [
     title: "Celebrities",
     description:
       "Claim your sector, share autographs directly with fans, and go live whenever you want to connect.",
+    to: "/celebrities",
   },
   {
     title: "Fans",
     description:
       "Request autographs from the celebrities you follow, collect what they share, and tune into their streams.",
+    to: "/signup?role=fan",
   },
   {
     title: "Agents",
     description:
       "Bring concerts onto the platform and link the celebrities performing at each event.",
+    to: "/concerts",
   },
   {
     title: "Managers",
     description:
       "Onboard the artists and celebrities you represent, and manage their presence on My Autograph.",
+    to: "/signup?role=manager",
   },
 ];
 
@@ -56,10 +60,17 @@ export default function Landing() {
           </h2>
           <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {roles.map((role) => (
-              <div key={role.title} className="card">
+              <Link
+                key={role.title}
+                to={role.to}
+                className="card block transition-shadow hover:-translate-y-0.5 hover:shadow-md"
+              >
                 <h3 className="text-lg font-semibold text-brand-green">{role.title}</h3>
                 <p className="mt-2 text-sm text-gray-600">{role.description}</p>
-              </div>
+                <span className="mt-4 inline-block text-sm font-medium text-brand-charcoal">
+                  Enter this sector &rarr;
+                </span>
+              </Link>
             ))}
           </div>
         </div>

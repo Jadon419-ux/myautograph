@@ -23,9 +23,24 @@ export default function Celebrities() {
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {celebrities.map((c) => (
           <Link key={c.id} to={`/celebrities/${c.id}`} className="card block hover:shadow-md">
-            <h2 className="text-lg font-semibold text-brand-charcoal">{c.stage_name}</h2>
+            <div className="flex items-center gap-3">
+              <span className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-brand-gray">
+                {c.avatar_url || c.profile_image_url ? (
+                  <img
+                    src={c.avatar_url || c.profile_image_url}
+                    alt={c.stage_name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center font-semibold text-gray-400">
+                    {c.stage_name?.[0]?.toUpperCase() || "?"}
+                  </span>
+                )}
+              </span>
+              <h2 className="text-lg font-semibold text-brand-charcoal">{c.stage_name}</h2>
+            </div>
             {c.category && (
-              <span className="mt-1 inline-block rounded-full bg-brand-greenLight px-2 py-0.5 text-xs font-medium text-brand-greenDark">
+              <span className="mt-2 inline-block rounded-full bg-brand-greenLight px-2 py-0.5 text-xs font-medium text-brand-greenDark">
                 {c.category}
               </span>
             )}

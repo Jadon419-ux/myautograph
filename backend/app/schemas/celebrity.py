@@ -10,6 +10,7 @@ class CelebrityRead(BaseModel):
     bio: str
     category: str
     profile_image_url: str | None = None
+    avatar_url: str | None = None
 
 
 class CelebrityUpdate(BaseModel):

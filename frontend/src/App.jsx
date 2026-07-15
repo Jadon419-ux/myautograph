@@ -9,6 +9,9 @@ import Signup from "./pages/Signup.jsx";
 import Celebrities from "./pages/Celebrities.jsx";
 import CelebrityProfile from "./pages/CelebrityProfile.jsx";
 import Concerts from "./pages/Concerts.jsx";
+import ConcertDetail from "./pages/ConcertDetail.jsx";
+import PaystackCallback from "./pages/PaystackCallback.jsx";
+import VerifyAutograph from "./pages/VerifyAutograph.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 
 export default function App() {
@@ -24,6 +27,9 @@ export default function App() {
           <Route path="/celebrities" element={<Celebrities />} />
           <Route path="/celebrities/:id" element={<CelebrityProfile />} />
           <Route path="/concerts" element={<Concerts />} />
+          <Route path="/concerts/:id" element={<ConcertDetail />} />
+          <Route path="/payments/callback" element={<PaystackCallback />} />
+          <Route path="/verify" element={<VerifyAutograph />} />
           <Route
             path="/dashboard"
             element={

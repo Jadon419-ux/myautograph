@@ -47,7 +47,22 @@ export default function CelebrityProfile() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <div className="card">
-        <h1 className="text-2xl font-semibold text-brand-charcoal">{celebrity.stage_name}</h1>
+        <div className="flex items-center gap-4">
+          <span className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-brand-gray">
+            {celebrity.avatar_url || celebrity.profile_image_url ? (
+              <img
+                src={celebrity.avatar_url || celebrity.profile_image_url}
+                alt={celebrity.stage_name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center text-xl font-semibold text-gray-400">
+                {celebrity.stage_name?.[0]?.toUpperCase() || "?"}
+              </span>
+            )}
+          </span>
+          <h1 className="text-2xl font-semibold text-brand-charcoal">{celebrity.stage_name}</h1>
+        </div>
         {celebrity.category && (
           <span className="mt-2 inline-block rounded-full bg-brand-greenLight px-2 py-0.5 text-xs font-medium text-brand-greenDark">
             {celebrity.category}
