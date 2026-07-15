@@ -6,3 +6,4 @@ passlib
 pydantic-settings
 python-multipart
 httpx
+psycopg2-binary
