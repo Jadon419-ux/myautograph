@@ -35,12 +35,15 @@ def verify_transaction(reference: str) -> dict:
     if not settings.paystack_secret_key:
         raise HTTPException(status_code=503, detail="Payments are not configured yet")
 
-    response = httpx.get(
-        f"{PAYSTACK_BASE_URL}/transaction/verify/{reference}",
-        headers={"Authorization": f"Bearer {settings.paystack_secret_key}"},
-        timeout=10,
-    )
-    response.raise_for_status()
+    try:
+        response = httpx.get(
+            f"{PAYSTACK_BASE_URL}/transaction/verify/{reference}",
+            headers={"Authorization": f"Bearer {settings.paystack_secret_key}"},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Could not verify payment with Paystack")
     return response.json()["data"]
 
 
