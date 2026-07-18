@@ -6,6 +6,7 @@ import StreamEmbed from "../components/StreamEmbed.jsx";
 import ImageUploadField from "../components/ImageUploadField.jsx";
 import PostCard from "../components/PostCard.jsx";
 import FollowButton from "../components/FollowButton.jsx";
+import ReviewSection from "../components/ReviewSection.jsx";
 
 export default function CelebrityProfile() {
   const { id } = useParams();
@@ -198,6 +199,8 @@ export default function CelebrityProfile() {
           </div>
         </div>
       )}
+
+      <ReviewSection targetType="celebrity" targetId={id} />
     </div>
   );
 }

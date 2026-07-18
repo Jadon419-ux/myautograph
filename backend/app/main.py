@@ -16,6 +16,7 @@ from app.routers import (
     managers,
     marketplace,
     payments,
+    reviews,
     social,
     streams,
     tickets,
@@ -71,6 +72,7 @@ app.include_router(tickets.router)
 app.include_router(payments.router)
 app.include_router(marketplace.router)
 app.include_router(social.router)
+app.include_router(reviews.router)
 
 
 @app.get("/health")

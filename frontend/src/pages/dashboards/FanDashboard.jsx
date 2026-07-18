@@ -27,6 +27,18 @@ function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
 }
 
+const REVIEW_TARGET_LABELS = {
+  celebrity: "Celebrity",
+  concert: "Concert",
+  marketplace_listing: "Marketplace purchase",
+};
+
+const REVIEW_TARGET_PATHS = {
+  celebrity: (id) => `/celebrities/${id}`,
+  concert: (id) => `/concerts/${id}`,
+  marketplace_listing: (id) => `/marketplace/${id}`,
+};
+
 export default function FanDashboard() {
   const [requests, setRequests] = useState([]);
   const [autographs, setAutographs] = useState([]);
@@ -40,6 +52,7 @@ export default function FanDashboard() {
   const [sellStatus, setSellStatus] = useState({});
   const [myListings, setMyListings] = useState([]);
   const [myBids, setMyBids] = useState([]);
+  const [myReviews, setMyReviews] = useState([]);
 
   function loadAutographs() {
     client.get("/autographs/mine").then(({ data }) => setAutographs(data));
@@ -50,10 +63,15 @@ export default function FanDashboard() {
     client.get("/marketplace/mine/bids").then(({ data }) => setMyBids(data));
   }
 
+  function loadReviews() {
+    client.get("/reviews/mine").then(({ data }) => setMyReviews(data));
+  }
+
   useEffect(() => {
     client.get("/autographs/requests/mine").then(({ data }) => setRequests(data));
     loadAutographs();
     loadMarketplace();
+    loadReviews();
     client.get("/streams/upcoming").then(({ data }) => setStreams(data));
     client.get("/tickets/my").then(({ data }) => setTickets(data));
     client.get("/celebrities").then(({ data }) => {
@@ -105,6 +123,11 @@ export default function FanDashboard() {
   async function cancelListing(listingId) {
     await client.delete(`/marketplace/listings/${listingId}`);
     loadMarketplace();
+  }
+
+  async function deleteReview(reviewId) {
+    await client.delete(`/reviews/${reviewId}`);
+    loadReviews();
   }
 
   return (
@@ -284,6 +307,28 @@ export default function FanDashboard() {
             </Link>
           ))}
           {myBids.length === 0 && <p className="text-sm text-gray-500">You haven't bid on any auctions.</p>}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold text-brand-charcoal">My reviews</h2>
+        <div className="mt-3 space-y-3">
+          {myReviews.map((r) => (
+            <div key={r.id} className="card flex items-center justify-between">
+              <Link to={REVIEW_TARGET_PATHS[r.target_type](r.target_id)} className="flex-1">
+                <p className="font-medium text-brand-charcoal">{REVIEW_TARGET_LABELS[r.target_type]}</p>
+                <p className="text-sm text-brand-green">
+                  {"★".repeat(r.rating)}
+                  <span className="text-brand-border">{"★".repeat(5 - r.rating)}</span>
+                </p>
+                {r.comment && <p className="text-sm text-gray-500">{r.comment}</p>}
+              </Link>
+              <button className="btn-secondary" onClick={() => deleteReview(r.id)}>
+                Delete
+              </button>
+            </div>
+          ))}
+          {myReviews.length === 0 && <p className="text-sm text-gray-500">You haven't written any reviews yet.</p>}
         </div>
       </section>
 

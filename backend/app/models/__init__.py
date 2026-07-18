@@ -18,6 +18,7 @@ from app.models.marketplace import (
     MarketplaceOrder,
 )
 from app.models.social import Post, Comment, PostLike, CelebrityFollow, FanFollow
+from app.models.review import Review, ReviewTargetType
 
 __all__ = [
     "User",
@@ -50,4 +51,6 @@ __all__ = [
     "PostLike",
     "CelebrityFollow",
     "FanFollow",
+    "Review",
+    "ReviewTargetType",
 ]

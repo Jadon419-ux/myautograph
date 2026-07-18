@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import client from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
+import ReviewSection from "../components/ReviewSection.jsx";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -182,6 +183,8 @@ export default function ConcertDetail() {
           </p>
         )}
       </div>
+
+      <ReviewSection targetType="concert" targetId={id} />
     </div>
   );
 }
