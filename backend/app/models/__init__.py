@@ -9,6 +9,14 @@ from app.models.ticket_category import TicketCategory
 from app.models.referral import ReferralLink, ReferralLinkStatus
 from app.models.ticket_order import TicketOrder, TicketOrderStatus
 from app.models.ticket import Ticket, TicketStatus
+from app.models.marketplace import (
+    ListingType,
+    ListingStatus,
+    MarketplaceListing,
+    Bid,
+    MarketplaceOrderStatus,
+    MarketplaceOrder,
+)
 
 __all__ = [
     "User",
@@ -30,4 +38,10 @@ __all__ = [
     "TicketOrderStatus",
     "Ticket",
     "TicketStatus",
+    "ListingType",
+    "ListingStatus",
+    "MarketplaceListing",
+    "Bid",
+    "MarketplaceOrderStatus",
+    "MarketplaceOrder",
 ]

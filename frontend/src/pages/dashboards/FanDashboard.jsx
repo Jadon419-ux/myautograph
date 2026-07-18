@@ -16,6 +16,17 @@ const STATUS_STYLES = {
   declined: "bg-red-100 text-red-700",
 };
 
+const LISTING_STATUS_STYLES = {
+  active: "bg-brand-greenLight text-brand-greenDark",
+  pending_sale: "bg-yellow-100 text-yellow-800",
+  sold: "bg-blue-100 text-blue-700",
+  cancelled: "bg-red-100 text-red-700",
+};
+
+function formatNaira(kobo) {
+  return `₦${(kobo / 100).toLocaleString()}`;
+}
+
 export default function FanDashboard() {
   const [requests, setRequests] = useState([]);
   const [autographs, setAutographs] = useState([]);
@@ -24,14 +35,25 @@ export default function FanDashboard() {
   const [tickets, setTickets] = useState([]);
   const [transferForms, setTransferForms] = useState({});
   const [transferStatus, setTransferStatus] = useState({});
+  const [sellForms, setSellForms] = useState({});
+  const [sellOpenFor, setSellOpenFor] = useState(null);
+  const [sellStatus, setSellStatus] = useState({});
+  const [myListings, setMyListings] = useState([]);
+  const [myBids, setMyBids] = useState([]);
 
   function loadAutographs() {
     client.get("/autographs/mine").then(({ data }) => setAutographs(data));
   }
 
+  function loadMarketplace() {
+    client.get("/marketplace/mine").then(({ data }) => setMyListings(data));
+    client.get("/marketplace/mine/bids").then(({ data }) => setMyBids(data));
+  }
+
   useEffect(() => {
     client.get("/autographs/requests/mine").then(({ data }) => setRequests(data));
     loadAutographs();
+    loadMarketplace();
     client.get("/streams/upcoming").then(({ data }) => setStreams(data));
     client.get("/tickets/my").then(({ data }) => setTickets(data));
     client.get("/celebrities").then(({ data }) => {
@@ -55,6 +77,34 @@ export default function FanDashboard() {
         [autographId]: err.response?.data?.detail || "Could not transfer this autograph.",
       });
     }
+  }
+
+  async function listForSale(e, autographId) {
+    e.preventDefault();
+    const form = sellForms[autographId] || {};
+    setSellStatus({ ...sellStatus, [autographId]: "" });
+    try {
+      await client.post("/marketplace/listings", {
+        autograph_id: autographId,
+        listing_type: form.listing_type || "fixed_price",
+        price_kobo: Math.round((form.price || 0) * 100),
+        auction_duration_hours:
+          form.listing_type === "auction" ? Number(form.duration_hours || 24) : undefined,
+      });
+      setSellOpenFor(null);
+      setSellForms({ ...sellForms, [autographId]: {} });
+      loadMarketplace();
+    } catch (err) {
+      setSellStatus({
+        ...sellStatus,
+        [autographId]: err.response?.data?.detail || "Could not list this autograph.",
+      });
+    }
+  }
+
+  async function cancelListing(listingId) {
+    await client.delete(`/marketplace/listings/${listingId}`);
+    loadMarketplace();
   }
 
   return (
@@ -111,10 +161,130 @@ export default function FanDashboard() {
               {transferStatus[a.id] && (
                 <p className="mt-1 text-xs text-red-600">{transferStatus[a.id]}</p>
               )}
+
+              <div className="mt-3 border-t border-brand-border pt-3">
+                {sellOpenFor === a.id ? (
+                  <form onSubmit={(e) => listForSale(e, a.id)} className="space-y-2">
+                    <div className="flex gap-2">
+                      <select
+                        className="input-field"
+                        value={sellForms[a.id]?.listing_type || "fixed_price"}
+                        onChange={(e) =>
+                          setSellForms({
+                            ...sellForms,
+                            [a.id]: { ...sellForms[a.id], listing_type: e.target.value },
+                          })
+                        }
+                      >
+                        <option value="fixed_price">Fixed price</option>
+                        <option value="auction">Auction</option>
+                      </select>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        placeholder="Price (₦)"
+                        className="input-field"
+                        value={sellForms[a.id]?.price || ""}
+                        onChange={(e) =>
+                          setSellForms({
+                            ...sellForms,
+                            [a.id]: { ...sellForms[a.id], price: e.target.value },
+                          })
+                        }
+                      />
+                    </div>
+                    {sellForms[a.id]?.listing_type === "auction" && (
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Auction duration (hours)"
+                        className="input-field"
+                        value={sellForms[a.id]?.duration_hours || ""}
+                        onChange={(e) =>
+                          setSellForms({
+                            ...sellForms,
+                            [a.id]: { ...sellForms[a.id], duration_hours: e.target.value },
+                          })
+                        }
+                      />
+                    )}
+                    <div className="flex gap-2">
+                      <button type="submit" className="btn-primary flex-1">List for sale</button>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => setSellOpenFor(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <button className="btn-secondary w-full" onClick={() => setSellOpenFor(a.id)}>
+                    List for sale
+                  </button>
+                )}
+                {sellStatus[a.id] && <p className="mt-1 text-xs text-red-600">{sellStatus[a.id]}</p>}
+              </div>
             </div>
           ))}
         </div>
         {autographs.length === 0 && <p className="mt-3 text-sm text-gray-500">Nothing collected yet.</p>}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold text-brand-charcoal">My marketplace listings</h2>
+        <div className="mt-3 space-y-3">
+          {myListings.map((l) => (
+            <div key={l.id} className="card flex items-center justify-between">
+              <Link to={`/marketplace/${l.id}`} className="flex-1">
+                <p className="font-medium text-brand-charcoal">{l.celebrity_stage_name}</p>
+                <p className="text-sm text-gray-500">
+                  {l.listing_type === "fixed_price"
+                    ? formatNaira(l.price_kobo)
+                    : `Current bid: ${formatNaira(l.current_highest_bid_kobo ?? l.price_kobo)}`}
+                </p>
+              </Link>
+              <div className="flex items-center gap-3">
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${LISTING_STATUS_STYLES[l.status]}`}
+                >
+                  {l.status.replace("_", " ")}
+                </span>
+                {l.status === "active" && (
+                  <button className="btn-secondary" onClick={() => cancelListing(l.id)}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {myListings.length === 0 && <p className="text-sm text-gray-500">You haven't listed anything for sale.</p>}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold text-brand-charcoal">My bids</h2>
+        <div className="mt-3 space-y-3">
+          {myBids.map((l) => (
+            <Link key={l.id} to={`/marketplace/${l.id}`} className="card flex items-center justify-between hover:shadow-md">
+              <div>
+                <p className="font-medium text-brand-charcoal">{l.celebrity_stage_name}</p>
+                <p className="text-sm text-gray-500">
+                  Current bid: {formatNaira(l.current_highest_bid_kobo ?? l.price_kobo)}
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-medium ${LISTING_STATUS_STYLES[l.status]}`}
+              >
+                {l.status.replace("_", " ")}
+              </span>
+            </Link>
+          ))}
+          {myBids.length === 0 && <p className="text-sm text-gray-500">You haven't bid on any auctions.</p>}
+        </div>
       </section>
 
       <section className="mt-10">

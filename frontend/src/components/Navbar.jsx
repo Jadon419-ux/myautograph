@@ -31,6 +31,9 @@ export default function Navbar() {
           <Link to="/verify" className="hover:text-brand-green">
             Verify
           </Link>
+          <Link to="/marketplace" className="hover:text-brand-green">
+            Marketplace
+          </Link>
 
           {user ? (
             <>

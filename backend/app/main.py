@@ -8,7 +8,17 @@ from sqlmodel import Session, select
 from app.config import settings
 from app.database import create_db_and_tables, engine
 from app.models.autograph import Autograph, AutographMedium
-from app.routers import auth, autographs, celebrities, concerts, managers, payments, streams, tickets
+from app.routers import (
+    auth,
+    autographs,
+    celebrities,
+    concerts,
+    managers,
+    marketplace,
+    payments,
+    streams,
+    tickets,
+)
 
 app = FastAPI(title="My Autograph API")
 
@@ -58,6 +68,7 @@ app.include_router(streams.router)
 app.include_router(managers.router)
 app.include_router(tickets.router)
 app.include_router(payments.router)
+app.include_router(marketplace.router)
 
 
 @app.get("/health")
