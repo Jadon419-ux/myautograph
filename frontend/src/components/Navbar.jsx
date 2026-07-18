@@ -37,6 +37,9 @@ export default function Navbar() {
 
           {user ? (
             <>
+              <Link to="/community" className="hover:text-brand-green">
+                Community
+              </Link>
               <Link to="/dashboard" className="flex items-center gap-2 hover:text-brand-green">
                 <span className="h-7 w-7 overflow-hidden rounded-full bg-brand-gray">
                   {user.avatar_url ? (

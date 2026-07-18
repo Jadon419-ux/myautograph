@@ -17,6 +17,7 @@ from app.models.marketplace import (
     MarketplaceOrderStatus,
     MarketplaceOrder,
 )
+from app.models.social import Post, Comment, PostLike, CelebrityFollow, FanFollow
 
 __all__ = [
     "User",
@@ -44,4 +45,9 @@ __all__ = [
     "Bid",
     "MarketplaceOrderStatus",
     "MarketplaceOrder",
+    "Post",
+    "Comment",
+    "PostLike",
+    "CelebrityFollow",
+    "FanFollow",
 ]

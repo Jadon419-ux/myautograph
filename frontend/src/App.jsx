@@ -14,6 +14,8 @@ import PaystackCallback from "./pages/PaystackCallback.jsx";
 import VerifyAutograph from "./pages/VerifyAutograph.jsx";
 import Marketplace from "./pages/Marketplace.jsx";
 import ListingDetail from "./pages/ListingDetail.jsx";
+import Community from "./pages/Community.jsx";
+import PostDetail from "./pages/PostDetail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 
 export default function App() {
@@ -34,6 +36,22 @@ export default function App() {
           <Route path="/verify" element={<VerifyAutograph />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/marketplace/:id" element={<ListingDetail />} />
+          <Route
+            path="/community"
+            element={
+              <ProtectedRoute>
+                <Community />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/community/posts/:id"
+            element={
+              <ProtectedRoute>
+                <PostDetail />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={
