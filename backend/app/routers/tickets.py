@@ -230,7 +230,7 @@ def _release_reservation(session: Session, order: TicketOrder, tickets: list[Tic
 def create_order(
     payload: TicketOrderCreate,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.fan)),
+    user: User = Depends(require_role(RoleEnum.fan, RoleEnum.admin)),
 ):
     category = session.get(TicketCategory, payload.category_id)
     if not category:
@@ -317,7 +317,7 @@ def create_order(
 def get_order(
     order_id: int,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.fan)),
+    user: User = Depends(require_role(RoleEnum.fan, RoleEnum.admin)),
 ):
     order = session.get(TicketOrder, order_id)
     if not order or order.buyer_user_id != user.id:
@@ -328,7 +328,7 @@ def get_order(
 @router.get("/my", response_model=list[TicketRead])
 def list_my_tickets(
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.fan)),
+    user: User = Depends(require_role(RoleEnum.fan, RoleEnum.admin)),
 ):
     return session.exec(select(Ticket).where(Ticket.buyer_user_id == user.id)).all()
 

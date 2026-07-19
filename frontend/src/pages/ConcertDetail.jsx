@@ -114,7 +114,7 @@ export default function ConcertDetail() {
           })}
         </div>
 
-        {user?.role === "fan" && categories.length > 0 && (
+        {(user?.role === "fan" || user?.role === "admin") && categories.length > 0 && (
           <form onSubmit={submitPurchase} className="mt-6 space-y-3 border-t border-brand-border pt-6">
             {error && <p className="text-sm text-red-600">{error}</p>}
             {success && <p className="text-sm text-brand-greenDark">{success}</p>}
