@@ -11,10 +11,13 @@ from app.deps import get_current_user
 from app.models.ticket_order import TicketOrder
 from app.models.marketplace import MarketplaceOrder
 from app.models.user import User
+from app.models.wallet import WalletFundingOrder
 from app.schemas.marketplace import MarketplaceOrderRead
 from app.schemas.ticket import TicketOrderRead
+from app.schemas.wallet import WalletFundingOrderRead
 from app.services.marketplace import verify_and_finalize_marketplace_order
 from app.services.paystack import verify_and_finalize
+from app.services.wallet import verify_and_finalize_wallet_funding
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -26,6 +29,10 @@ def _finalize_by_reference(session: Session, reference: str):
         select(MarketplaceOrder).where(MarketplaceOrder.paystack_reference == reference)
     ).first():
         return verify_and_finalize_marketplace_order(session, reference), "marketplace"
+    if session.exec(
+        select(WalletFundingOrder).where(WalletFundingOrder.paystack_reference == reference)
+    ).first():
+        return verify_and_finalize_wallet_funding(session, reference), "wallet"
     raise HTTPException(status_code=404, detail="Order not found")
 
 
@@ -36,10 +43,13 @@ def verify_payment(
     user: User = Depends(get_current_user),
 ):
     order, kind = _finalize_by_reference(session, reference)
-    if order.buyer_user_id != user.id:
+    owner_id = order.user_id if kind == "wallet" else order.buyer_user_id
+    if owner_id != user.id:
         raise HTTPException(status_code=404, detail="Order not found")
     if kind == "ticket":
         return TicketOrderRead(**order.model_dump(), authorization_url=None)
+    if kind == "wallet":
+        return WalletFundingOrderRead(**order.model_dump(), authorization_url=None)
     return MarketplaceOrderRead(**order.model_dump(), authorization_url=None)
 
 

@@ -20,4 +20,5 @@ class User(SQLModel, table=True):
     full_name: str
     role: RoleEnum
     avatar_url: str | None = None
+    wallet_balance_kobo: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)

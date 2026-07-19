@@ -9,6 +9,7 @@ from app.config import settings
 from app.database import create_db_and_tables, engine
 from app.models.autograph import Autograph, AutographMedium
 from app.models.celebrity import CelebrityProfile, VerificationStatus
+from app.models.user import User
 from app.routers import (
     admin,
     auth,
@@ -22,6 +23,7 @@ from app.routers import (
     social,
     streams,
     tickets,
+    wallet,
 )
 
 app = FastAPI(title="My Autograph API")
@@ -78,6 +80,15 @@ def on_startup():
         if celebs_needing_backfill:
             session.commit()
 
+        users_needing_backfill = session.exec(
+            select(User).where(User.wallet_balance_kobo.is_(None))
+        ).all()
+        for backfill_user in users_needing_backfill:
+            backfill_user.wallet_balance_kobo = 0
+            session.add(backfill_user)
+        if users_needing_backfill:
+            session.commit()
+
 
 app.include_router(auth.router)
 app.include_router(celebrities.router)
@@ -91,6 +102,7 @@ app.include_router(marketplace.router)
 app.include_router(social.router)
 app.include_router(reviews.router)
 app.include_router(admin.router)
+app.include_router(wallet.router)
 
 
 @app.get("/health")

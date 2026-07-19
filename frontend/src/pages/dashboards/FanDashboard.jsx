@@ -53,6 +53,30 @@ export default function FanDashboard() {
   const [myListings, setMyListings] = useState([]);
   const [myBids, setMyBids] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
+  const [wallet, setWallet] = useState(null);
+  const [walletTransactions, setWalletTransactions] = useState([]);
+  const [fundAmount, setFundAmount] = useState("");
+  const [walletStatus, setWalletStatus] = useState("");
+
+  function loadWallet() {
+    client.get("/wallet/me").then(({ data }) => setWallet(data));
+    client.get("/wallet/transactions").then(({ data }) => setWalletTransactions(data));
+  }
+
+  async function fundWallet(e) {
+    e.preventDefault();
+    setWalletStatus("");
+    try {
+      const { data } = await client.post("/wallet/fund", {
+        amount_kobo: Math.round(Number(fundAmount || 0) * 100),
+      });
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      }
+    } catch (err) {
+      setWalletStatus(err.response?.data?.detail || "Could not start wallet funding.");
+    }
+  }
 
   function loadAutographs() {
     client.get("/autographs/mine").then(({ data }) => setAutographs(data));
@@ -72,6 +96,7 @@ export default function FanDashboard() {
     loadAutographs();
     loadMarketplace();
     loadReviews();
+    loadWallet();
     client.get("/streams/upcoming").then(({ data }) => setStreams(data));
     client.get("/tickets/my").then(({ data }) => setTickets(data));
     client.get("/celebrities").then(({ data }) => {
@@ -135,6 +160,47 @@ export default function FanDashboard() {
       <h1 className="text-2xl font-semibold text-brand-charcoal">Fan dashboard</h1>
 
       <section className="mt-8">
+        <h2 className="text-lg font-semibold text-brand-charcoal">My wallet</h2>
+        <div className="card mt-3">
+          <p className="text-sm text-gray-500">Balance</p>
+          <p className="mt-1 text-2xl font-semibold text-brand-greenDark">
+            {formatNaira(wallet?.balance_kobo ?? 0)}
+          </p>
+          <form onSubmit={fundWallet} className="mt-3 flex gap-2">
+            <input
+              type="number"
+              step="0.01"
+              min="100"
+              required
+              placeholder="Amount (₦)"
+              className="input-field"
+              value={fundAmount}
+              onChange={(e) => setFundAmount(e.target.value)}
+            />
+            <button type="submit" className="btn-primary shrink-0">Add funds</button>
+          </form>
+          {walletStatus && <p className="mt-1 text-xs text-red-600">{walletStatus}</p>}
+
+          <div className="mt-4 space-y-2 border-t border-brand-border pt-3">
+            {walletTransactions.map((t) => (
+              <div key={t.id} className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">
+                  {t.description || t.type} · {new Date(t.created_at).toLocaleDateString()}
+                </span>
+                <span className={t.amount_kobo >= 0 ? "text-brand-greenDark" : "text-red-600"}>
+                  {t.amount_kobo >= 0 ? "+" : "-"}
+                  {formatNaira(Math.abs(t.amount_kobo))}
+                </span>
+              </div>
+            ))}
+            {walletTransactions.length === 0 && (
+              <p className="text-sm text-gray-500">No wallet activity yet.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-10">
         <h2 className="text-lg font-semibold text-brand-charcoal">My autograph requests</h2>
         <div className="mt-3 space-y-3">
           {requests.map((r) => (
