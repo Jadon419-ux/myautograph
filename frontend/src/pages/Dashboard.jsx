@@ -5,6 +5,7 @@ import CelebrityDashboard from "./dashboards/CelebrityDashboard.jsx";
 import AgentDashboard from "./dashboards/AgentDashboard.jsx";
 import ManagerDashboard from "./dashboards/ManagerDashboard.jsx";
 import SalesAgentDashboard from "./dashboards/SalesAgentDashboard.jsx";
+import AdminDashboard from "./dashboards/AdminDashboard.jsx";
 
 function RoleDashboard({ role }) {
   switch (role) {
@@ -18,6 +19,8 @@ function RoleDashboard({ role }) {
       return <ManagerDashboard />;
     case "sales_agent":
       return <SalesAgentDashboard />;
+    case "admin":
+      return <AdminDashboard />;
     default:
       return (
         <div className="mx-auto max-w-4xl px-6 py-16 text-sm text-gray-500">

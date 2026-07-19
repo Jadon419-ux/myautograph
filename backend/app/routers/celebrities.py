@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 
 from app.database import get_session
 from app.deps import get_celebrity_profile_for_user, require_role
-from app.models.celebrity import CelebrityProfile
+from app.models.celebrity import CelebrityProfile, VerificationStatus
 from app.models.user import RoleEnum, User
 from app.schemas.celebrity import CelebrityRead, CelebrityUpdate
 
@@ -20,12 +20,16 @@ def _to_read(session: Session, profile: CelebrityProfile) -> CelebrityRead:
         category=profile.category,
         profile_image_url=profile.profile_image_url,
         avatar_url=owner.avatar_url if owner else None,
+        verification_status=profile.verification_status,
+        rejection_reason=profile.rejection_reason,
     )
 
 
 @router.get("", response_model=list[CelebrityRead])
 def list_celebrities(session: Session = Depends(get_session)):
-    profiles = session.exec(select(CelebrityProfile)).all()
+    profiles = session.exec(
+        select(CelebrityProfile).where(CelebrityProfile.verification_status == VerificationStatus.approved)
+    ).all()
     return [_to_read(session, p) for p in profiles]
 
 
@@ -41,7 +45,7 @@ def get_my_profile(
 @router.get("/{celebrity_id}", response_model=CelebrityRead)
 def get_celebrity(celebrity_id: int, session: Session = Depends(get_session)):
     profile = session.get(CelebrityProfile, celebrity_id)
-    if not profile:
+    if not profile or profile.verification_status != VerificationStatus.approved:
         raise HTTPException(status_code=404, detail="Celebrity not found")
     return _to_read(session, profile)
 

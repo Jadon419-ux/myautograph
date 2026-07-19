@@ -7,7 +7,7 @@ from app.database import get_session
 from app.deps import get_celebrity_profile_for_user, require_role
 from app.models.autograph import Autograph, AutographMedium, AutographRequest, AutographRequestStatus
 from app.models.autograph_transfer import AutographTransfer
-from app.models.celebrity import CelebrityProfile
+from app.models.celebrity import CelebrityProfile, VerificationStatus
 from app.models.user import RoleEnum, User
 from app.schemas.autograph import (
     AutographCreate,
@@ -21,6 +21,19 @@ from app.schemas.autograph import (
 )
 
 router = APIRouter(prefix="/autographs", tags=["autographs"])
+
+
+def _require_approved(profile: CelebrityProfile) -> None:
+    if profile.verification_status == VerificationStatus.rejected:
+        detail = "Your celebrity account verification was rejected"
+        if profile.rejection_reason:
+            detail += f": {profile.rejection_reason}"
+        raise HTTPException(status_code=403, detail=detail)
+    if profile.verification_status != VerificationStatus.approved:
+        raise HTTPException(
+            status_code=403,
+            detail="Your celebrity account is pending verification. You'll be able to publish autographs once approved.",
+        )
 
 
 @router.post("/requests", response_model=AutographRequestRead)
@@ -87,6 +100,7 @@ def publish_autograph(
     user: User = Depends(require_role(RoleEnum.celebrity)),
 ):
     profile = get_celebrity_profile_for_user(user, session)
+    _require_approved(profile)
 
     owner_user_id = None
     if payload.request_id is not None:
@@ -125,6 +139,7 @@ def log_physical_autograph(
     user: User = Depends(require_role(RoleEnum.celebrity)),
 ):
     profile = get_celebrity_profile_for_user(user, session)
+    _require_approved(profile)
 
     owner_user_id = None
     if payload.recipient_email:

@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from app.database import create_db_and_tables, engine
 from app.models.autograph import Autograph, AutographRequest, AutographRequestStatus
 from app.models.autograph_transfer import AutographTransfer
-from app.models.celebrity import CelebrityProfile
+from app.models.celebrity import CelebrityProfile, VerificationStatus
 from app.models.concert import Concert, ConcertCelebrityLink
 from app.models.roster import ManagerRoster
 from app.models.stream import Stream
@@ -64,12 +64,14 @@ def seed_demo_data() -> None:
             stage_name="Cassidy Star",
             bio="Award-winning vocalist and songwriter.",
             category="Music",
+            verification_status=VerificationStatus.approved,
         )
         celeb_profile_2 = CelebrityProfile(
             user_id=celeb_user_2.id,
             stage_name="Miles Rivera",
             bio="Screen actor known for leading roles in drama features.",
             category="Film",
+            verification_status=VerificationStatus.approved,
         )
         session.add_all([celeb_profile_1, celeb_profile_2])
         session.commit()

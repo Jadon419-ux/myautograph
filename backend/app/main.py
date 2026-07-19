@@ -8,7 +8,9 @@ from sqlmodel import Session, select
 from app.config import settings
 from app.database import create_db_and_tables, engine
 from app.models.autograph import Autograph, AutographMedium
+from app.models.celebrity import CelebrityProfile, VerificationStatus
 from app.routers import (
+    admin,
     auth,
     autographs,
     celebrities,
@@ -61,6 +63,21 @@ def on_startup():
         if needs_backfill:
             session.commit()
 
+        celebs_needing_backfill = session.exec(
+            select(CelebrityProfile).where(
+                CelebrityProfile.verification_status.is_(None)
+                | (CelebrityProfile.created_at.is_(None))
+            )
+        ).all()
+        for profile in celebs_needing_backfill:
+            if profile.verification_status is None:
+                profile.verification_status = VerificationStatus.approved
+            if profile.created_at is None:
+                profile.created_at = datetime.utcnow()
+            session.add(profile)
+        if celebs_needing_backfill:
+            session.commit()
+
 
 app.include_router(auth.router)
 app.include_router(celebrities.router)
@@ -73,6 +90,7 @@ app.include_router(payments.router)
 app.include_router(marketplace.router)
 app.include_router(social.router)
 app.include_router(reviews.router)
+app.include_router(admin.router)
 
 
 @app.get("/health")

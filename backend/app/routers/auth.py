@@ -24,6 +24,9 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
     if payload.role == RoleEnum.celebrity and not payload.stage_name:
         raise HTTPException(status_code=400, detail="stage_name is required for celebrity accounts")
 
+    if payload.role == RoleEnum.admin:
+        raise HTTPException(status_code=400, detail="Admin accounts cannot be self-registered")
+
     referral_link = None
     if payload.role == RoleEnum.sales_agent:
         referral_link = session.exec(

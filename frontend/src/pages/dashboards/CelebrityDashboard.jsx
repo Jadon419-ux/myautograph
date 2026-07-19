@@ -131,6 +131,23 @@ export default function CelebrityDashboard() {
       </h1>
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
+      {profile.verification_status === "pending" && (
+        <div className="card mt-4 border-l-4 border-yellow-400 bg-yellow-50">
+          <p className="text-sm font-medium text-yellow-800">Your account is pending verification</p>
+          <p className="mt-1 text-sm text-yellow-700">
+            You'll be able to publish autographs once an admin approves your profile.
+          </p>
+        </div>
+      )}
+      {profile.verification_status === "rejected" && (
+        <div className="card mt-4 border-l-4 border-red-400 bg-red-50">
+          <p className="text-sm font-medium text-red-800">Your verification was not approved</p>
+          {profile.rejection_reason && (
+            <p className="mt-1 text-sm text-red-700">Reason: {profile.rejection_reason}</p>
+          )}
+        </div>
+      )}
+
       <section className="mt-8">
         <h2 className="text-lg font-semibold text-brand-charcoal">Incoming requests</h2>
         <div className="mt-3 space-y-3">
@@ -156,97 +173,101 @@ export default function CelebrityDashboard() {
         </div>
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-brand-charcoal">Publish an autograph</h2>
-        <form onSubmit={publishAutograph} className="card mt-3 space-y-3">
-          <div>
-            <label className="label">Link to request (optional)</label>
-            <select
-              className="input-field"
-              value={publishForm.request_id}
-              onChange={(e) => setPublishForm({ ...publishForm, request_id: e.target.value })}
-            >
-              <option value="">Not tied to a request</option>
-              {requests
-                .filter((r) => r.status !== "declined")
-                .map((r) => (
-                  <option key={r.id} value={r.id}>
-                    Request #{r.id} — {r.message?.slice(0, 40) || "(no message)"}
-                  </option>
-                ))}
-            </select>
-          </div>
-          <div>
-            <label className="label">Image URL</label>
-            <input
-              required
-              className="input-field"
-              value={publishForm.content_url}
-              onChange={(e) => setPublishForm({ ...publishForm, content_url: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="label">Caption</label>
-            <input
-              className="input-field"
-              value={publishForm.caption}
-              onChange={(e) => setPublishForm({ ...publishForm, caption: e.target.value })}
-            />
-          </div>
-          <button type="submit" className="btn-primary">Publish</button>
-        </form>
-      </section>
+      {profile.verification_status === "approved" && (
+        <>
+          <section className="mt-10">
+            <h2 className="text-lg font-semibold text-brand-charcoal">Publish an autograph</h2>
+            <form onSubmit={publishAutograph} className="card mt-3 space-y-3">
+              <div>
+                <label className="label">Link to request (optional)</label>
+                <select
+                  className="input-field"
+                  value={publishForm.request_id}
+                  onChange={(e) => setPublishForm({ ...publishForm, request_id: e.target.value })}
+                >
+                  <option value="">Not tied to a request</option>
+                  {requests
+                    .filter((r) => r.status !== "declined")
+                    .map((r) => (
+                      <option key={r.id} value={r.id}>
+                        Request #{r.id} — {r.message?.slice(0, 40) || "(no message)"}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Image URL</label>
+                <input
+                  required
+                  className="input-field"
+                  value={publishForm.content_url}
+                  onChange={(e) => setPublishForm({ ...publishForm, content_url: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label">Caption</label>
+                <input
+                  className="input-field"
+                  value={publishForm.caption}
+                  onChange={(e) => setPublishForm({ ...publishForm, caption: e.target.value })}
+                />
+              </div>
+              <button type="submit" className="btn-primary">Publish</button>
+            </form>
+          </section>
 
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-brand-charcoal">Log a physical autograph</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Authenticate an autograph you gave out in person and add it to the fan's vault.
-        </p>
-        <form onSubmit={logPhysicalAutograph} className="card mt-3 space-y-3">
-          <div>
-            <label className="label">Recipient name</label>
-            <input
-              required
-              className="input-field"
-              value={physicalForm.recipient_name}
-              onChange={(e) => setPhysicalForm({ ...physicalForm, recipient_name: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="label">Recipient email (optional — links it to their account if they have one)</label>
-            <input
-              type="email"
-              className="input-field"
-              value={physicalForm.recipient_email}
-              onChange={(e) => setPhysicalForm({ ...physicalForm, recipient_email: e.target.value })}
-            />
-          </div>
-          <ImageUploadField
-            label="Photo of the autograph"
-            value={physicalForm.content_url}
-            onUploaded={(url) => setPhysicalForm({ ...physicalForm, content_url: url })}
-          />
-          <div>
-            <label className="label">Caption</label>
-            <input
-              className="input-field"
-              value={physicalForm.caption}
-              onChange={(e) => setPhysicalForm({ ...physicalForm, caption: e.target.value })}
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={physicalForm.is_publicly_visible}
-              onChange={(e) => setPhysicalForm({ ...physicalForm, is_publicly_visible: e.target.checked })}
-            />
-            Show recipient name publicly when this autograph is verified
-          </label>
-          <button type="submit" disabled={!physicalForm.content_url} className="btn-primary">
-            Log autograph
-          </button>
-        </form>
-      </section>
+          <section className="mt-10">
+            <h2 className="text-lg font-semibold text-brand-charcoal">Log a physical autograph</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Authenticate an autograph you gave out in person and add it to the fan's vault.
+            </p>
+            <form onSubmit={logPhysicalAutograph} className="card mt-3 space-y-3">
+              <div>
+                <label className="label">Recipient name</label>
+                <input
+                  required
+                  className="input-field"
+                  value={physicalForm.recipient_name}
+                  onChange={(e) => setPhysicalForm({ ...physicalForm, recipient_name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label">Recipient email (optional — links it to their account if they have one)</label>
+                <input
+                  type="email"
+                  className="input-field"
+                  value={physicalForm.recipient_email}
+                  onChange={(e) => setPhysicalForm({ ...physicalForm, recipient_email: e.target.value })}
+                />
+              </div>
+              <ImageUploadField
+                label="Photo of the autograph"
+                value={physicalForm.content_url}
+                onUploaded={(url) => setPhysicalForm({ ...physicalForm, content_url: url })}
+              />
+              <div>
+                <label className="label">Caption</label>
+                <input
+                  className="input-field"
+                  value={physicalForm.caption}
+                  onChange={(e) => setPhysicalForm({ ...physicalForm, caption: e.target.value })}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={physicalForm.is_publicly_visible}
+                  onChange={(e) => setPhysicalForm({ ...physicalForm, is_publicly_visible: e.target.checked })}
+                />
+                Show recipient name publicly when this autograph is verified
+              </label>
+              <button type="submit" disabled={!physicalForm.content_url} className="btn-primary">
+                Log autograph
+              </button>
+            </form>
+          </section>
+        </>
+      )}
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold text-brand-charcoal">My autograph history</h2>
