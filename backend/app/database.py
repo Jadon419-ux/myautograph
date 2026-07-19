@@ -18,6 +18,7 @@ def _add_missing_columns() -> None:
     optional field) without wiping persisted data.
     """
     inspector = inspect(engine)
+    preparer = engine.dialect.identifier_preparer
     with engine.connect() as conn:
         for table_name, table in SQLModel.metadata.tables.items():
             if not inspector.has_table(table_name):
@@ -26,8 +27,10 @@ def _add_missing_columns() -> None:
             for column in table.columns:
                 if column.name not in existing_columns:
                     col_type = column.type.compile(engine.dialect)
+                    quoted_table = preparer.quote(table_name)
+                    quoted_column = preparer.quote(column.name)
                     conn.execute(
-                        text(f"ALTER TABLE {table_name} ADD COLUMN {column.name} {col_type}")
+                        text(f"ALTER TABLE {quoted_table} ADD COLUMN {quoted_column} {col_type}")
                     )
         conn.commit()
 
