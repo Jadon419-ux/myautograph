@@ -53,6 +53,7 @@ export default function FanDashboard() {
   const [myListings, setMyListings] = useState([]);
   const [myBids, setMyBids] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
+  const [myMerchOrders, setMyMerchOrders] = useState([]);
   const [wallet, setWallet] = useState(null);
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [fundAmount, setFundAmount] = useState("");
@@ -91,11 +92,16 @@ export default function FanDashboard() {
     client.get("/reviews/mine").then(({ data }) => setMyReviews(data));
   }
 
+  function loadMerchOrders() {
+    client.get("/merchandise/mine/orders").then(({ data }) => setMyMerchOrders(data));
+  }
+
   useEffect(() => {
     client.get("/autographs/requests/mine").then(({ data }) => setRequests(data));
     loadAutographs();
     loadMarketplace();
     loadReviews();
+    loadMerchOrders();
     loadWallet();
     client.get("/streams/upcoming").then(({ data }) => setStreams(data));
     client.get("/tickets/my").then(({ data }) => setTickets(data));
@@ -395,6 +401,39 @@ export default function FanDashboard() {
             </div>
           ))}
           {myReviews.length === 0 && <p className="text-sm text-gray-500">You haven't written any reviews yet.</p>}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold text-brand-charcoal">My merch orders</h2>
+        <div className="mt-3 space-y-3">
+          {myMerchOrders.map((o) => (
+            <div key={o.id} className="card flex items-center gap-4">
+              <img
+                src={o.merchandise_image_url}
+                alt={o.merchandise_title}
+                className="h-14 w-14 rounded-md object-cover"
+              />
+              <div className="flex-1">
+                <p className="font-medium text-brand-charcoal">{o.merchandise_title}</p>
+                <p className="text-sm text-gray-500">
+                  Qty {o.quantity} · {formatNaira(o.amount_kobo)} · {new Date(o.created_at).toLocaleDateString()}
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  o.status === "paid"
+                    ? "bg-brand-greenLight text-brand-greenDark"
+                    : o.status === "failed"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {o.status}
+              </span>
+            </div>
+          ))}
+          {myMerchOrders.length === 0 && <p className="text-sm text-gray-500">No merch orders yet.</p>}
         </div>
       </section>
 

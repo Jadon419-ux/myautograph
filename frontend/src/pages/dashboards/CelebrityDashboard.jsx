@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import client from "../../api/client.js";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 
+function formatNaira(kobo) {
+  return `₦${(kobo / 100).toLocaleString()}`;
+}
+
 export default function CelebrityDashboard() {
   const [profile, setProfile] = useState(null);
   const [requests, setRequests] = useState([]);
@@ -22,6 +26,18 @@ export default function CelebrityDashboard() {
     is_publicly_visible: true,
   });
 
+  const [merchItems, setMerchItems] = useState([]);
+  const [merchSales, setMerchSales] = useState([]);
+  const [merchForm, setMerchForm] = useState({
+    title: "",
+    description: "",
+    image_url: "",
+    price: "",
+    quantity_total: "",
+  });
+  const [merchEditForms, setMerchEditForms] = useState({});
+  const [merchStatus, setMerchStatus] = useState("");
+
   async function loadAll() {
     const { data: me } = await client.get("/celebrities/me");
     setProfile(me);
@@ -33,6 +49,53 @@ export default function CelebrityDashboard() {
     setReferrals(myReferrals);
     const { data: issued } = await client.get("/autographs/issued");
     setIssuedAutographs(issued);
+    loadMerch();
+  }
+
+  function loadMerch() {
+    client.get("/merchandise/mine").then(({ data }) => setMerchItems(data));
+    client.get("/merchandise/mine/sales").then(({ data }) => setMerchSales(data));
+  }
+
+  async function createMerchandise(e) {
+    e.preventDefault();
+    setMerchStatus("");
+    try {
+      await client.post("/merchandise", {
+        title: merchForm.title,
+        description: merchForm.description,
+        image_url: merchForm.image_url,
+        price_kobo: Math.round(Number(merchForm.price || 0) * 100),
+        quantity_total: Number(merchForm.quantity_total || 0),
+      });
+      setMerchForm({ title: "", description: "", image_url: "", price: "", quantity_total: "" });
+      loadMerch();
+    } catch (err) {
+      setMerchStatus(err.response?.data?.detail || "Could not list this item.");
+    }
+  }
+
+  async function updateMerchandise(id, updates) {
+    setMerchStatus("");
+    try {
+      await client.patch(`/merchandise/${id}`, updates);
+      loadMerch();
+    } catch (err) {
+      setMerchStatus(err.response?.data?.detail || "Could not update this item.");
+    }
+  }
+
+  function saveMerchEdit(item) {
+    const edits = merchEditForms[item.id] || {};
+    const updates = {};
+    if (edits.price !== undefined && edits.price !== "") {
+      updates.price_kobo = Math.round(Number(edits.price) * 100);
+    }
+    if (edits.quantity_total !== undefined && edits.quantity_total !== "") {
+      updates.quantity_total = Number(edits.quantity_total);
+    }
+    updateMerchandise(item.id, updates);
+    setMerchEditForms({ ...merchEditForms, [item.id]: {} });
   }
 
   useEffect(() => {
@@ -265,6 +328,145 @@ export default function CelebrityDashboard() {
                 Log autograph
               </button>
             </form>
+          </section>
+
+          <section className="mt-10">
+            <h2 className="text-lg font-semibold text-brand-charcoal">My merchandise</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              List autographed material for fans to buy — photo, description, price, and how many you have.
+            </p>
+
+            <form onSubmit={createMerchandise} className="card mt-3 space-y-3">
+              <div>
+                <label className="label">Title</label>
+                <input
+                  required
+                  className="input-field"
+                  value={merchForm.title}
+                  onChange={(e) => setMerchForm({ ...merchForm, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label">About this item</label>
+                <input
+                  className="input-field"
+                  value={merchForm.description}
+                  onChange={(e) => setMerchForm({ ...merchForm, description: e.target.value })}
+                />
+              </div>
+              <ImageUploadField
+                label="Photo"
+                value={merchForm.image_url}
+                onUploaded={(url) => setMerchForm({ ...merchForm, image_url: url })}
+              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="label">Price (₦)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    className="input-field"
+                    value={merchForm.price}
+                    onChange={(e) => setMerchForm({ ...merchForm, price: e.target.value })}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="label">Quantity available</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    className="input-field"
+                    value={merchForm.quantity_total}
+                    onChange={(e) => setMerchForm({ ...merchForm, quantity_total: e.target.value })}
+                  />
+                </div>
+              </div>
+              <button type="submit" disabled={!merchForm.image_url} className="btn-primary">
+                List item
+              </button>
+              {merchStatus && <p className="text-sm text-red-600">{merchStatus}</p>}
+            </form>
+
+            <div className="mt-4 space-y-3">
+              {merchItems.map((m) => (
+                <div key={m.id} className="card">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <img src={m.image_url} alt={m.title} className="h-14 w-14 rounded-md object-cover" />
+                      <div>
+                        <p className="font-medium text-brand-charcoal">{m.title}</p>
+                        <p className="text-sm text-gray-500">
+                          {formatNaira(m.price_kobo)} · {m.quantity_available} available · {m.quantity_sold} sold
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      className="btn-secondary shrink-0"
+                      onClick={() => updateMerchandise(m.id, { is_active: !m.is_active })}
+                    >
+                      {m.is_active ? "Deactivate" : "Reactivate"}
+                    </button>
+                  </div>
+                  <div className="mt-3 flex gap-2 border-t border-brand-border pt-3">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="New price (₦)"
+                      className="input-field"
+                      value={merchEditForms[m.id]?.price || ""}
+                      onChange={(e) =>
+                        setMerchEditForms({
+                          ...merchEditForms,
+                          [m.id]: { ...merchEditForms[m.id], price: e.target.value },
+                        })
+                      }
+                    />
+                    <input
+                      type="number"
+                      min={m.quantity_total - m.quantity_available}
+                      placeholder="New total quantity"
+                      className="input-field"
+                      value={merchEditForms[m.id]?.quantity_total || ""}
+                      onChange={(e) =>
+                        setMerchEditForms({
+                          ...merchEditForms,
+                          [m.id]: { ...merchEditForms[m.id], quantity_total: e.target.value },
+                        })
+                      }
+                    />
+                    <button className="btn-secondary shrink-0" onClick={() => saveMerchEdit(m)}>
+                      Update
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {merchItems.length === 0 && (
+                <p className="text-sm text-gray-500">You haven't listed any merchandise yet.</p>
+              )}
+            </div>
+
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-brand-charcoal">Sales</h3>
+              <div className="mt-2 space-y-2">
+                {merchSales.map((s) => (
+                  <div key={s.order_id} className="card flex items-center justify-between text-sm">
+                    <div>
+                      <p className="font-medium text-brand-charcoal">{s.merchandise_title}</p>
+                      <p className="text-gray-500">
+                        {s.buyer_name} ({s.buyer_email}) · qty {s.quantity} ·{" "}
+                        {new Date(s.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <p className="font-semibold text-brand-greenDark">{formatNaira(s.amount_kobo)}</p>
+                  </div>
+                ))}
+                {merchSales.length === 0 && <p className="text-sm text-gray-500">No sales yet.</p>}
+              </div>
+            </div>
           </section>
         </>
       )}
