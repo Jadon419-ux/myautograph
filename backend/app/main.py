@@ -9,6 +9,7 @@ from app.config import settings
 from app.database import create_db_and_tables, engine
 from app.models.autograph import Autograph, AutographMedium
 from app.models.celebrity import CelebrityProfile, VerificationStatus
+from app.models.user import RoleEnum, User
 from app.routers import (
     admin,
     auth,
@@ -76,6 +77,15 @@ def on_startup():
                 profile.created_at = datetime.utcnow()
             session.add(profile)
         if celebs_needing_backfill:
+            session.commit()
+
+        # One-time admin bootstrap — remove once confirmed live. See git history for context.
+        bootstrap_admin = session.exec(
+            select(User).where(User.email == "jadon4119@gmail.com")
+        ).first()
+        if bootstrap_admin and bootstrap_admin.role != RoleEnum.admin:
+            bootstrap_admin.role = RoleEnum.admin
+            session.add(bootstrap_admin)
             session.commit()
 
 
