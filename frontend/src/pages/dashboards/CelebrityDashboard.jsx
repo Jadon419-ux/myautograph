@@ -17,6 +17,7 @@ const AUCTION_STATUS_STYLES = {
 export default function CelebrityDashboard() {
   const [profile, setProfile] = useState(null);
   const [requests, setRequests] = useState([]);
+  const [requestFilter, setRequestFilter] = useState("all");
   const [streams, setStreams] = useState([]);
   const [publishForm, setPublishForm] = useState({ request_id: "", content_url: "", caption: "" });
   const [streamForm, setStreamForm] = useState({ title: "", embed_url: "", scheduled_at: "" });
@@ -27,6 +28,7 @@ export default function CelebrityDashboard() {
 
   const [issuedAutographs, setIssuedAutographs] = useState([]);
   const [physicalForm, setPhysicalForm] = useState({
+    request_id: "",
     recipient_name: "",
     recipient_email: "",
     content_url: "",
@@ -187,8 +189,12 @@ export default function CelebrityDashboard() {
     e.preventDefault();
     setError("");
     try {
-      await client.post("/autographs/physical", physicalForm);
+      await client.post("/autographs/physical", {
+        ...physicalForm,
+        request_id: physicalForm.request_id ? Number(physicalForm.request_id) : null,
+      });
       setPhysicalForm({
+        request_id: "",
         recipient_name: "",
         recipient_email: "",
         content_url: "",
@@ -334,26 +340,56 @@ export default function CelebrityDashboard() {
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold text-brand-charcoal">Incoming requests</h2>
-        <div className="mt-3 space-y-3">
-          {requests.map((r) => (
-            <div key={r.id} className="card flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm text-gray-600">{r.message || "(no message)"}</p>
-                <p className="mt-1 text-xs uppercase tracking-wide text-gray-400">{r.status}</p>
-              </div>
-              {r.status === "pending" && (
-                <div className="flex shrink-0 gap-2">
-                  <button className="btn-primary" onClick={() => updateStatus(r.id, "fulfilled")}>
-                    Fulfill
-                  </button>
-                  <button className="btn-secondary" onClick={() => updateStatus(r.id, "declined")}>
-                    Decline
-                  </button>
-                </div>
-              )}
-            </div>
+        <div className="mt-3 flex gap-2">
+          {["all", "online", "onsite"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setRequestFilter(f)}
+              className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${
+                requestFilter === f
+                  ? "bg-brand-greenLight text-brand-greenDark"
+                  : "bg-brand-gray text-gray-500"
+              }`}
+            >
+              {f}
+            </button>
           ))}
-          {requests.length === 0 && <p className="text-sm text-gray-500">No requests yet.</p>}
+        </div>
+        <div className="mt-4 space-y-3">
+          {requests
+            .filter((r) => requestFilter === "all" || r.request_type === requestFilter)
+            .map((r) => (
+              <div key={r.id} className="card flex items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        r.request_type === "onsite"
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {r.request_type}
+                    </span>
+                    <p className="text-sm text-gray-600">{r.message || "(no message)"}</p>
+                  </div>
+                  <p className="mt-1 text-xs uppercase tracking-wide text-gray-400">{r.status}</p>
+                </div>
+                {r.status === "pending" && (
+                  <div className="flex shrink-0 gap-2">
+                    <button className="btn-primary" onClick={() => updateStatus(r.id, "fulfilled")}>
+                      Fulfill
+                    </button>
+                    <button className="btn-secondary" onClick={() => updateStatus(r.id, "declined")}>
+                      Decline
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          {requests.filter((r) => requestFilter === "all" || r.request_type === requestFilter).length === 0 && (
+            <p className="text-sm text-gray-500">No requests yet.</p>
+          )}
         </div>
       </section>
 
@@ -371,7 +407,7 @@ export default function CelebrityDashboard() {
                 >
                   <option value="">Not tied to a request</option>
                   {requests
-                    .filter((r) => r.status !== "declined")
+                    .filter((r) => r.status === "pending" && r.request_type === "online")
                     .map((r) => (
                       <option key={r.id} value={r.id}>
                         Request #{r.id} — {r.message?.slice(0, 40) || "(no message)"}
@@ -406,6 +442,23 @@ export default function CelebrityDashboard() {
               Authenticate an autograph you gave out in person and add it to the fan's vault.
             </p>
             <form onSubmit={logPhysicalAutograph} className="card mt-3 space-y-3">
+              <div>
+                <label className="label">Link to an onsite request (optional)</label>
+                <select
+                  className="input-field"
+                  value={physicalForm.request_id}
+                  onChange={(e) => setPhysicalForm({ ...physicalForm, request_id: e.target.value })}
+                >
+                  <option value="">Not tied to a request</option>
+                  {requests
+                    .filter((r) => r.status === "pending" && r.request_type === "onsite")
+                    .map((r) => (
+                      <option key={r.id} value={r.id}>
+                        Request #{r.id} — {r.message?.slice(0, 40) || "(no message)"}
+                      </option>
+                    ))}
+                </select>
+              </div>
               <div>
                 <label className="label">Recipient name</label>
                 <input

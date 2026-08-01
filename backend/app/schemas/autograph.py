@@ -2,12 +2,13 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from app.models.autograph import AutographMedium, AutographRequestStatus
+from app.models.autograph import AutographMedium, AutographRequestStatus, AutographRequestType
 
 
 class AutographRequestCreate(BaseModel):
     celebrity_id: int
     message: str = ""
+    request_type: AutographRequestType = AutographRequestType.online
 
 
 class AutographRequestRead(BaseModel):
@@ -15,6 +16,7 @@ class AutographRequestRead(BaseModel):
     fan_id: int
     celebrity_id: int
     message: str
+    request_type: AutographRequestType
     status: AutographRequestStatus
     created_at: datetime
 
@@ -30,6 +32,7 @@ class AutographCreate(BaseModel):
 
 
 class PhysicalAutographCreate(BaseModel):
+    request_id: int | None = None
     recipient_name: str
     recipient_email: str = ""
     content_url: str

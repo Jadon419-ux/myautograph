@@ -10,6 +10,11 @@ class AutographRequestStatus(str, Enum):
     declined = "declined"
 
 
+class AutographRequestType(str, Enum):
+    online = "online"
+    onsite = "onsite"
+
+
 class AutographMedium(str, Enum):
     digital = "digital"
     physical = "physical"
@@ -20,6 +25,7 @@ class AutographRequest(SQLModel, table=True):
     fan_id: int = Field(foreign_key="user.id")
     celebrity_id: int = Field(foreign_key="celebrityprofile.id")
     message: str = ""
+    request_type: AutographRequestType = AutographRequestType.online
     status: AutographRequestStatus = AutographRequestStatus.pending
     created_at: datetime = Field(default_factory=datetime.utcnow)
 

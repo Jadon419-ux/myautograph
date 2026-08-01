@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 
 from app.config import settings
 from app.database import create_db_and_tables, engine
-from app.models.autograph import Autograph, AutographMedium
+from app.models.autograph import Autograph, AutographMedium, AutographRequest, AutographRequestType
 from app.models.celebrity import CelebrityProfile, VerificationStatus
 from app.models.user import User
 from app.routers import (
@@ -94,6 +94,15 @@ def on_startup():
                 backfill_user.wallet_held_kobo = 0
             session.add(backfill_user)
         if users_needing_backfill:
+            session.commit()
+
+        requests_needing_backfill = session.exec(
+            select(AutographRequest).where(AutographRequest.request_type.is_(None))
+        ).all()
+        for request in requests_needing_backfill:
+            request.request_type = AutographRequestType.online
+            session.add(request)
+        if requests_needing_backfill:
             session.commit()
 
 

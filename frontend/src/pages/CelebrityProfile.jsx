@@ -16,6 +16,7 @@ export default function CelebrityProfile() {
   const [autographs, setAutographs] = useState([]);
   const [streams, setStreams] = useState([]);
   const [message, setMessage] = useState("");
+  const [requestType, setRequestType] = useState("online");
   const [requestStatus, setRequestStatus] = useState("");
   const [posts, setPosts] = useState([]);
   const [followedUserIds, setFollowedUserIds] = useState(new Set());
@@ -76,6 +77,7 @@ export default function CelebrityProfile() {
       await client.post("/autographs/requests", {
         celebrity_id: Number(id),
         message,
+        request_type: requestType,
       });
       setMessage("");
       setRequestStatus("Your request has been sent!");
@@ -141,6 +143,26 @@ export default function CelebrityProfile() {
         <div className="card mt-6">
           <h2 className="text-lg font-semibold text-brand-charcoal">Request an autograph</h2>
           <form onSubmit={submitRequest} className="mt-3 space-y-3">
+            <div className="flex gap-4 text-sm">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="request_type"
+                  checked={requestType === "online"}
+                  onChange={() => setRequestType("online")}
+                />
+                Online (digital autograph)
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="request_type"
+                  checked={requestType === "onsite"}
+                  onChange={() => setRequestType("onsite")}
+                />
+                Onsite (meet in person at an event)
+              </label>
+            </div>
             <textarea
               className="input-field"
               rows={3}

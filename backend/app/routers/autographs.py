@@ -46,6 +46,7 @@ def create_request(
         fan_id=user.id,
         celebrity_id=payload.celebrity_id,
         message=payload.message,
+        request_type=payload.request_type,
     )
     session.add(request)
     session.commit()
@@ -141,6 +142,12 @@ def log_physical_autograph(
     profile = get_celebrity_profile_for_user(user, session)
     _require_approved(profile)
 
+    request = None
+    if payload.request_id is not None:
+        request = session.get(AutographRequest, payload.request_id)
+        if not request or request.celebrity_id != profile.id:
+            raise HTTPException(status_code=404, detail="Request not found")
+
     owner_user_id = None
     if payload.recipient_email:
         recipient = session.exec(
@@ -148,9 +155,12 @@ def log_physical_autograph(
         ).first()
         if recipient:
             owner_user_id = recipient.id
+    elif request is not None:
+        owner_user_id = request.fan_id
 
     autograph = Autograph(
         celebrity_id=profile.id,
+        request_id=payload.request_id,
         content_url=payload.content_url,
         caption=payload.caption,
         medium=AutographMedium.physical,
@@ -160,6 +170,11 @@ def log_physical_autograph(
         is_publicly_visible=payload.is_publicly_visible,
     )
     session.add(autograph)
+
+    if request is not None:
+        request.status = AutographRequestStatus.fulfilled
+        session.add(request)
+
     session.commit()
     session.refresh(autograph)
 

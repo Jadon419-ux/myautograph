@@ -231,9 +231,20 @@ export default function FanDashboard() {
           {requests.map((r) => (
             <div key={r.id} className="card flex items-center justify-between">
               <div>
-                <p className="font-medium text-brand-charcoal">
-                  {celebrities[r.celebrity_id] || `Celebrity #${r.celebrity_id}`}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-brand-charcoal">
+                    {celebrities[r.celebrity_id] || `Celebrity #${r.celebrity_id}`}
+                  </p>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      r.request_type === "onsite"
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {r.request_type}
+                  </span>
+                </div>
                 {r.message && <p className="text-sm text-gray-500">{r.message}</p>}
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[r.status]}`}>
