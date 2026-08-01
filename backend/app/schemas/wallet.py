@@ -30,3 +30,5 @@ class WalletTransactionRead(BaseModel):
 
 class WalletRead(BaseModel):
     balance_kobo: int
+    held_kobo: int
+    available_kobo: int

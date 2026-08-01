@@ -6,6 +6,13 @@ function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
 }
 
+const AUCTION_STATUS_STYLES = {
+  active: "bg-brand-greenLight text-brand-greenDark",
+  sold: "bg-blue-100 text-blue-700",
+  unsold: "bg-gray-100 text-gray-600",
+  cancelled: "bg-red-100 text-red-700",
+};
+
 export default function CelebrityDashboard() {
   const [profile, setProfile] = useState(null);
   const [requests, setRequests] = useState([]);
@@ -38,6 +45,16 @@ export default function CelebrityDashboard() {
   const [merchEditForms, setMerchEditForms] = useState({});
   const [merchStatus, setMerchStatus] = useState("");
 
+  const [auctions, setAuctions] = useState([]);
+  const [auctionForm, setAuctionForm] = useState({
+    title: "",
+    description: "",
+    image_url: "",
+    starting_price: "",
+    duration_hours: "24",
+  });
+  const [auctionStatus, setAuctionStatus] = useState("");
+
   async function loadAll() {
     const { data: me } = await client.get("/celebrities/me");
     setProfile(me);
@@ -50,11 +67,44 @@ export default function CelebrityDashboard() {
     const { data: issued } = await client.get("/autographs/issued");
     setIssuedAutographs(issued);
     loadMerch();
+    loadAuctions();
   }
 
   function loadMerch() {
     client.get("/merchandise/mine").then(({ data }) => setMerchItems(data));
     client.get("/merchandise/mine/sales").then(({ data }) => setMerchSales(data));
+  }
+
+  function loadAuctions() {
+    client.get("/star-auctions/mine").then(({ data }) => setAuctions(data));
+  }
+
+  async function createAuction(e) {
+    e.preventDefault();
+    setAuctionStatus("");
+    try {
+      await client.post("/star-auctions", {
+        title: auctionForm.title,
+        description: auctionForm.description,
+        image_url: auctionForm.image_url,
+        starting_price_kobo: Math.round(Number(auctionForm.starting_price || 0) * 100),
+        duration_hours: Number(auctionForm.duration_hours || 24),
+      });
+      setAuctionForm({ title: "", description: "", image_url: "", starting_price: "", duration_hours: "24" });
+      loadAuctions();
+    } catch (err) {
+      setAuctionStatus(err.response?.data?.detail || "Could not start this auction.");
+    }
+  }
+
+  async function cancelAuction(id) {
+    setAuctionStatus("");
+    try {
+      await client.delete(`/star-auctions/${id}`);
+      loadAuctions();
+    } catch (err) {
+      setAuctionStatus(err.response?.data?.detail || "Could not cancel this auction.");
+    }
   }
 
   async function createMerchandise(e) {
@@ -466,6 +516,99 @@ export default function CelebrityDashboard() {
                 ))}
                 {merchSales.length === 0 && <p className="text-sm text-gray-500">No sales yet.</p>}
               </div>
+            </div>
+          </section>
+
+          <section className="mt-10">
+            <h2 className="text-lg font-semibold text-brand-charcoal">My auctions</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Auction autographed material — fans bid using their wallet balance, and the highest
+              bidder is charged automatically once bidding ends.
+            </p>
+
+            <form onSubmit={createAuction} className="card mt-3 space-y-3">
+              <div>
+                <label className="label">Title</label>
+                <input
+                  required
+                  className="input-field"
+                  value={auctionForm.title}
+                  onChange={(e) => setAuctionForm({ ...auctionForm, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label">About this item</label>
+                <input
+                  className="input-field"
+                  value={auctionForm.description}
+                  onChange={(e) => setAuctionForm({ ...auctionForm, description: e.target.value })}
+                />
+              </div>
+              <ImageUploadField
+                label="Photo"
+                value={auctionForm.image_url}
+                onUploaded={(url) => setAuctionForm({ ...auctionForm, image_url: url })}
+              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="label">Starting price (₦)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    className="input-field"
+                    value={auctionForm.starting_price}
+                    onChange={(e) => setAuctionForm({ ...auctionForm, starting_price: e.target.value })}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="label">Duration (hours)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    className="input-field"
+                    value={auctionForm.duration_hours}
+                    onChange={(e) => setAuctionForm({ ...auctionForm, duration_hours: e.target.value })}
+                  />
+                </div>
+              </div>
+              <button type="submit" disabled={!auctionForm.image_url} className="btn-primary">
+                Start auction
+              </button>
+              {auctionStatus && <p className="text-sm text-red-600">{auctionStatus}</p>}
+            </form>
+
+            <div className="mt-4 space-y-3">
+              {auctions.map((a) => (
+                <div key={a.id} className="card flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <img src={a.image_url} alt={a.title} className="h-14 w-14 rounded-md object-cover" />
+                    <div>
+                      <p className="font-medium text-brand-charcoal">{a.title}</p>
+                      <p className="text-sm text-gray-500">
+                        {formatNaira(a.current_highest_bid_kobo ?? a.starting_price_kobo)} · {a.bid_count} bids
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${AUCTION_STATUS_STYLES[a.status]}`}
+                    >
+                      {a.status}
+                    </span>
+                    {a.status === "active" && a.bid_count === 0 && (
+                      <button className="btn-secondary" onClick={() => cancelAuction(a.id)}>
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {auctions.length === 0 && (
+                <p className="text-sm text-gray-500">You haven't started any auctions yet.</p>
+              )}
             </div>
           </section>
         </>

@@ -22,6 +22,8 @@ class WalletFundingOrder(SQLModel, table=True):
 
 class WalletTransactionType(str, Enum):
     funding = "funding"
+    auction_win = "auction_win"
+    auction_sale = "auction_sale"
 
 
 class WalletTransaction(SQLModel, table=True):

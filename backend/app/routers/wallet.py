@@ -23,7 +23,11 @@ MIN_FUNDING_KOBO = 10000
 
 @router.get("/me", response_model=WalletRead)
 def get_my_wallet(user: User = Depends(get_current_user)):
-    return WalletRead(balance_kobo=user.wallet_balance_kobo)
+    return WalletRead(
+        balance_kobo=user.wallet_balance_kobo,
+        held_kobo=user.wallet_held_kobo,
+        available_kobo=user.wallet_balance_kobo - user.wallet_held_kobo,
+    )
 
 
 @router.get("/transactions", response_model=list[WalletTransactionRead])

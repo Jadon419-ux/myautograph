@@ -16,6 +16,8 @@ import Marketplace from "./pages/Marketplace.jsx";
 import ListingDetail from "./pages/ListingDetail.jsx";
 import Merch from "./pages/Merch.jsx";
 import MerchDetail from "./pages/MerchDetail.jsx";
+import StarAuctions from "./pages/StarAuctions.jsx";
+import StarAuctionDetail from "./pages/StarAuctionDetail.jsx";
 import Community from "./pages/Community.jsx";
 import PostDetail from "./pages/PostDetail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -40,6 +42,8 @@ export default function App() {
           <Route path="/marketplace/:id" element={<ListingDetail />} />
           <Route path="/merch" element={<Merch />} />
           <Route path="/merch/:id" element={<MerchDetail />} />
+          <Route path="/star-auctions" element={<StarAuctions />} />
+          <Route path="/star-auctions/:id" element={<StarAuctionDetail />} />
           <Route
             path="/community"
             element={

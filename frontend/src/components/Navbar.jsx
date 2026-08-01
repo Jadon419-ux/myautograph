@@ -37,6 +37,9 @@ export default function Navbar() {
           <Link to="/merch" className="hover:text-brand-green">
             Merch
           </Link>
+          <Link to="/star-auctions" className="hover:text-brand-green">
+            Auctions
+          </Link>
 
           {user ? (
             <>

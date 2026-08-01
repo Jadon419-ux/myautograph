@@ -23,6 +23,13 @@ const LISTING_STATUS_STYLES = {
   cancelled: "bg-red-100 text-red-700",
 };
 
+const AUCTION_STATUS_STYLES = {
+  active: "bg-brand-greenLight text-brand-greenDark",
+  sold: "bg-blue-100 text-blue-700",
+  unsold: "bg-gray-100 text-gray-600",
+  cancelled: "bg-red-100 text-red-700",
+};
+
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
 }
@@ -54,6 +61,7 @@ export default function FanDashboard() {
   const [myBids, setMyBids] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
   const [myMerchOrders, setMyMerchOrders] = useState([]);
+  const [myAuctionBids, setMyAuctionBids] = useState([]);
   const [wallet, setWallet] = useState(null);
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [fundAmount, setFundAmount] = useState("");
@@ -96,12 +104,17 @@ export default function FanDashboard() {
     client.get("/merchandise/mine/orders").then(({ data }) => setMyMerchOrders(data));
   }
 
+  function loadAuctionBids() {
+    client.get("/star-auctions/mine/bids").then(({ data }) => setMyAuctionBids(data));
+  }
+
   useEffect(() => {
     client.get("/autographs/requests/mine").then(({ data }) => setRequests(data));
     loadAutographs();
     loadMarketplace();
     loadReviews();
     loadMerchOrders();
+    loadAuctionBids();
     loadWallet();
     client.get("/streams/upcoming").then(({ data }) => setStreams(data));
     client.get("/tickets/my").then(({ data }) => setTickets(data));
@@ -172,6 +185,12 @@ export default function FanDashboard() {
           <p className="mt-1 text-2xl font-semibold text-brand-greenDark">
             {formatNaira(wallet?.balance_kobo ?? 0)}
           </p>
+          {wallet && wallet.held_kobo > 0 && (
+            <p className="mt-1 text-xs text-gray-500">
+              {formatNaira(wallet.held_kobo)} held on active auction bids ·{" "}
+              {formatNaira(wallet.available_kobo)} available
+            </p>
+          )}
           <form onSubmit={fundWallet} className="mt-3 flex gap-2">
             <input
               type="number"
@@ -434,6 +453,33 @@ export default function FanDashboard() {
             </div>
           ))}
           {myMerchOrders.length === 0 && <p className="text-sm text-gray-500">No merch orders yet.</p>}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold text-brand-charcoal">My auction bids</h2>
+        <div className="mt-3 space-y-3">
+          {myAuctionBids.map((a) => (
+            <Link
+              key={a.id}
+              to={`/star-auctions/${a.id}`}
+              className="card flex items-center justify-between hover:shadow-md"
+            >
+              <div>
+                <p className="font-medium text-brand-charcoal">{a.title}</p>
+                <p className="text-sm text-gray-500">
+                  {a.celebrity_stage_name} · Current bid:{" "}
+                  {formatNaira(a.current_highest_bid_kobo ?? a.starting_price_kobo)}
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-medium ${AUCTION_STATUS_STYLES[a.status]}`}
+              >
+                {a.status}
+              </span>
+            </Link>
+          ))}
+          {myAuctionBids.length === 0 && <p className="text-sm text-gray-500">You haven't bid on any auctions.</p>}
         </div>
       </section>
 

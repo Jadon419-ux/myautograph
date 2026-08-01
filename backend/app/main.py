@@ -22,6 +22,7 @@ from app.routers import (
     payments,
     reviews,
     social,
+    star_auction,
     streams,
     tickets,
     wallet,
@@ -82,10 +83,15 @@ def on_startup():
             session.commit()
 
         users_needing_backfill = session.exec(
-            select(User).where(User.wallet_balance_kobo.is_(None))
+            select(User).where(
+                User.wallet_balance_kobo.is_(None) | User.wallet_held_kobo.is_(None)
+            )
         ).all()
         for backfill_user in users_needing_backfill:
-            backfill_user.wallet_balance_kobo = 0
+            if backfill_user.wallet_balance_kobo is None:
+                backfill_user.wallet_balance_kobo = 0
+            if backfill_user.wallet_held_kobo is None:
+                backfill_user.wallet_held_kobo = 0
             session.add(backfill_user)
         if users_needing_backfill:
             session.commit()
@@ -105,6 +111,7 @@ app.include_router(reviews.router)
 app.include_router(admin.router)
 app.include_router(wallet.router)
 app.include_router(merchandise.router)
+app.include_router(star_auction.router)
 
 
 @app.get("/health")
