@@ -55,6 +55,9 @@ export default function CelebrityDashboard() {
   });
   const [auctionStatus, setAuctionStatus] = useState("");
 
+  const [wallet, setWallet] = useState(null);
+  const [earningsTransactions, setEarningsTransactions] = useState([]);
+
   async function loadAll() {
     const { data: me } = await client.get("/celebrities/me");
     setProfile(me);
@@ -68,6 +71,12 @@ export default function CelebrityDashboard() {
     setIssuedAutographs(issued);
     loadMerch();
     loadAuctions();
+    loadEarnings();
+  }
+
+  function loadEarnings() {
+    client.get("/wallet/me").then(({ data }) => setWallet(data));
+    client.get("/wallet/transactions").then(({ data }) => setEarningsTransactions(data));
   }
 
   function loadMerch() {
@@ -262,6 +271,57 @@ export default function CelebrityDashboard() {
       )}
 
       <section className="mt-8">
+        <h2 className="text-lg font-semibold text-brand-charcoal">Earnings</h2>
+        <div className="card mt-3">
+          <p className="text-sm text-gray-500">Wallet balance</p>
+          <p className="mt-1 text-2xl font-semibold text-brand-greenDark">
+            {formatNaira(wallet?.balance_kobo ?? 0)}
+          </p>
+
+          <div className="mt-4 grid grid-cols-2 gap-4 border-t border-brand-border pt-4">
+            <div>
+              <p className="text-sm text-gray-500">Merchandise sales</p>
+              <p className="mt-1 text-lg font-semibold text-brand-charcoal">
+                {formatNaira(
+                  earningsTransactions
+                    .filter((t) => t.type === "merch_sale")
+                    .reduce((sum, t) => sum + t.amount_kobo, 0)
+                )}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Auction sales</p>
+              <p className="mt-1 text-lg font-semibold text-brand-charcoal">
+                {formatNaira(
+                  earningsTransactions
+                    .filter((t) => t.type === "auction_sale")
+                    .reduce((sum, t) => sum + t.amount_kobo, 0)
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2 border-t border-brand-border pt-3">
+            <h3 className="text-sm font-semibold text-brand-charcoal">Recent activity</h3>
+            {earningsTransactions.map((t) => (
+              <div key={t.id} className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">
+                  {t.description || t.type} · {new Date(t.created_at).toLocaleDateString()}
+                </span>
+                <span className={t.amount_kobo >= 0 ? "text-brand-greenDark" : "text-red-600"}>
+                  {t.amount_kobo >= 0 ? "+" : "-"}
+                  {formatNaira(Math.abs(t.amount_kobo))}
+                </span>
+              </div>
+            ))}
+            {earningsTransactions.length === 0 && (
+              <p className="text-sm text-gray-500">No earnings recorded yet.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-10">
         <h2 className="text-lg font-semibold text-brand-charcoal">Incoming requests</h2>
         <div className="mt-3 space-y-3">
           {requests.map((r) => (

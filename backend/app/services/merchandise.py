@@ -3,7 +3,10 @@ from datetime import datetime
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
+from app.models.celebrity import CelebrityProfile
 from app.models.merchandise import CelebrityMerchandise, MerchandiseOrder, MerchandiseOrderStatus
+from app.models.user import User
+from app.models.wallet import WalletTransaction, WalletTransactionType
 from app.schemas.merchandise import MerchandiseOrderRead
 from app.services.paystack import verify_transaction
 
@@ -45,6 +48,20 @@ def verify_and_finalize_merchandise_order(session: Session, reference: str) -> M
         merch.quantity_reserved = max(0, merch.quantity_reserved - order.quantity)
         merch.quantity_sold += order.quantity
         session.add(merch)
+
+        celebrity = session.get(CelebrityProfile, merch.celebrity_id)
+        if celebrity:
+            celebrity_user = session.get(User, celebrity.user_id)
+            celebrity_user.wallet_balance_kobo += order.amount_kobo
+            session.add(celebrity_user)
+            session.add(
+                WalletTransaction(
+                    user_id=celebrity_user.id,
+                    type=WalletTransactionType.merch_sale,
+                    amount_kobo=order.amount_kobo,
+                    description=f"Merch sale: {merch.title}",
+                )
+            )
     else:
         order.status = MerchandiseOrderStatus.failed
         merch.quantity_reserved = max(0, merch.quantity_reserved - order.quantity)
