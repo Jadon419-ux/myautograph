@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import client from "../../api/client.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import QrScanner from "../../components/QrScanner.jsx";
+import ShareProfileLink from "../../components/ShareProfileLink.jsx";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -134,6 +135,9 @@ export default function AgentDashboard() {
   }
 
   const selectedConcert = concerts.find((c) => c.id === selectedConcertId);
+  const linkedCelebrities = Array.from(
+    new Map(concerts.flatMap((c) => c.celebrities).map((celeb) => [celeb.id, celeb])).values()
+  );
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
@@ -233,6 +237,25 @@ export default function AgentDashboard() {
           {concerts.length === 0 && <p className="text-sm text-gray-500">No concerts yet.</p>}
         </div>
       </section>
+
+      {linkedCelebrities.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-lg font-semibold text-brand-charcoal">Share celebrity pages</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Share a Star's autograph page with friends and fans so they can follow.
+          </p>
+          <div className="mt-3 space-y-3">
+            {linkedCelebrities.map((celeb) => (
+              <div key={celeb.id} className="card">
+                <p className="font-medium text-brand-charcoal">{celeb.stage_name}</p>
+                <div className="mt-2">
+                  <ShareProfileLink celebrityId={celeb.id} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {selectedConcertId && (
         <section className="mt-10">

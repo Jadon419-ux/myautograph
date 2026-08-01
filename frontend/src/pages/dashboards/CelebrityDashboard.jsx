@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import client from "../../api/client.js";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
+import ShareProfileLink from "../../components/ShareProfileLink.jsx";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -252,6 +253,16 @@ export default function CelebrityDashboard() {
         Celebrity dashboard — {profile.stage_name}
       </h1>
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
+      <div className="card mt-4">
+        <p className="text-sm font-medium text-brand-charcoal">Share your autograph page</p>
+        <p className="mt-1 text-sm text-gray-500">
+          Send this link to friends and fans so they can follow you.
+        </p>
+        <div className="mt-3">
+          <ShareProfileLink celebrityId={profile.id} />
+        </div>
+      </div>
 
       {profile.verification_status === "pending" && (
         <div className="card mt-4 border-l-4 border-yellow-400 bg-yellow-50">

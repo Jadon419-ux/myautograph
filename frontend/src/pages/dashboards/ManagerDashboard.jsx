@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import client from "../../api/client.js";
+import ShareProfileLink from "../../components/ShareProfileLink.jsx";
 
 export default function ManagerDashboard() {
   const [roster, setRoster] = useState([]);
@@ -47,6 +48,12 @@ export default function ManagerDashboard() {
             <div key={c.id} className="card">
               <h3 className="font-semibold text-brand-charcoal">{c.stage_name}</h3>
               {c.category && <p className="text-sm text-gray-500">{c.category}</p>}
+              <div className="mt-3 border-t border-brand-border pt-3">
+                <p className="text-xs text-gray-500">Share their autograph page</p>
+                <div className="mt-2">
+                  <ShareProfileLink celebrityId={c.id} />
+                </div>
+              </div>
             </div>
           ))}
         </div>
