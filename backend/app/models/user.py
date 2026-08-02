@@ -18,6 +18,7 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, index=True)
     hashed_password: str
     full_name: str
+    phone_number: str = ""
     role: RoleEnum
     avatar_url: str | None = None
     wallet_balance_kobo: int = 0

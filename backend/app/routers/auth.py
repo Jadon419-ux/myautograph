@@ -37,6 +37,9 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
     if payload.role == RoleEnum.celebrity and not payload.stage_name:
         raise HTTPException(status_code=400, detail="stage_name is required for celebrity accounts")
 
+    if not payload.phone_number or not payload.phone_number.strip():
+        raise HTTPException(status_code=400, detail="Phone number is required")
+
     if payload.role == RoleEnum.admin:
         raise HTTPException(status_code=400, detail="Admin accounts cannot be self-registered")
 
@@ -59,6 +62,7 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
         email=payload.email,
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
+        phone_number=payload.phone_number.strip(),
         role=payload.role,
     )
     code = _issue_verification_code(user)

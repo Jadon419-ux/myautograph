@@ -36,10 +36,14 @@ def onboard_celebrity(
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    if not payload.phone_number or not payload.phone_number.strip():
+        raise HTTPException(status_code=400, detail="Phone number is required")
+
     celebrity_user = User(
         email=payload.email,
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
+        phone_number=payload.phone_number.strip(),
         role=RoleEnum.celebrity,
     )
     session.add(celebrity_user)

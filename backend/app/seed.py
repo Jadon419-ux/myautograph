@@ -28,6 +28,7 @@ def seed_demo_data() -> None:
             email="fan@demo.com",
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name="Frankie Fan",
+            phone_number="+2348010000001",
             role=RoleEnum.fan,
             is_email_verified=True,
         )
@@ -35,6 +36,7 @@ def seed_demo_data() -> None:
             email="celeb@demo.com",
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name="Cassidy Star",
+            phone_number="+2348010000002",
             role=RoleEnum.celebrity,
             is_email_verified=True,
         )
@@ -42,6 +44,7 @@ def seed_demo_data() -> None:
             email="celeb2@demo.com",
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name="Miles Rivera",
+            phone_number="+2348010000003",
             role=RoleEnum.celebrity,
             is_email_verified=True,
         )
@@ -49,6 +52,7 @@ def seed_demo_data() -> None:
             email="agent@demo.com",
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name="Alex Agent",
+            phone_number="+2348010000004",
             role=RoleEnum.agent,
             is_email_verified=True,
         )
@@ -56,6 +60,7 @@ def seed_demo_data() -> None:
             email="manager@demo.com",
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name="Morgan Manager",
+            phone_number="+2348010000005",
             role=RoleEnum.manager,
             is_email_verified=True,
         )

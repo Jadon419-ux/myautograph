@@ -7,6 +7,7 @@ class CelebrityOnboardCreate(BaseModel):
     email: str
     password: str
     full_name: str
+    phone_number: str
     stage_name: str
     category: str = ""
 

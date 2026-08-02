@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import client from "../../api/client.js";
 import ShareProfileLink from "../../components/ShareProfileLink.jsx";
+import PasswordField from "../../components/PasswordField.jsx";
 
 export default function ManagerDashboard() {
   const [roster, setRoster] = useState([]);
   const [form, setForm] = useState({
     email: "",
+    phone_number: "",
     password: "",
     full_name: "",
     stage_name: "",
@@ -29,7 +31,7 @@ export default function ManagerDashboard() {
     setSuccess("");
     try {
       await client.post("/managers/roster", form);
-      setForm({ email: "", password: "", full_name: "", stage_name: "", category: "" });
+      setForm({ email: "", phone_number: "", password: "", full_name: "", stage_name: "", category: "" });
       setSuccess("Celebrity onboarded successfully.");
       loadRoster();
     } catch (err) {
@@ -104,15 +106,22 @@ export default function ManagerDashboard() {
             />
           </div>
           <div>
-            <label className="label">Temporary password</label>
+            <label className="label">Phone number</label>
             <input
-              type="password"
+              type="tel"
               required
+              placeholder="+234..."
               className="input-field"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              value={form.phone_number}
+              onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
             />
           </div>
+          <PasswordField
+            id="manager_onboard_password"
+            label="Temporary password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
           <button type="submit" className="btn-primary">Onboard celebrity</button>
         </form>
       </section>

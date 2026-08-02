@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
+import PasswordField from "../components/PasswordField.jsx";
 
 const ROLES = [
   { value: "fan", label: "Fan" },
@@ -19,6 +20,7 @@ export default function Signup() {
   const [form, setForm] = useState({
     full_name: "",
     email: "",
+    phone_number: "",
     password: "",
     role: initialRole,
     stage_name: "",
@@ -78,16 +80,27 @@ export default function Signup() {
         </div>
 
         <div>
-          <label className="label" htmlFor="password">Password</label>
+          <label className="label" htmlFor="phone_number">Phone number</label>
           <input
-            id="password"
-            type="password"
+            id="phone_number"
+            type="tel"
             required
+            placeholder="+234..."
             className="input-field"
-            value={form.password}
-            onChange={(e) => update("password", e.target.value)}
+            value={form.phone_number}
+            onChange={(e) => update("phone_number", e.target.value)}
           />
+          <p className="mt-1 text-xs text-gray-500">
+            Used so other fans can buy tickets for you and to help verify your account.
+          </p>
         </div>
+
+        <PasswordField
+          id="password"
+          label="Password"
+          value={form.password}
+          onChange={(e) => update("password", e.target.value)}
+        />
 
         <div>
           <label className="label" htmlFor="role">I am a...</label>
