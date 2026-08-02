@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 import PasswordField from "../components/PasswordField.jsx";
 
@@ -51,6 +51,10 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+
+        <Link to="/forgot-password" className="block text-right text-sm text-brand-green hover:underline">
+          Forgot password?
+        </Link>
 
         <button type="submit" disabled={submitting} className="btn-primary w-full">
           {submitting ? "Logging in..." : "Log in"}

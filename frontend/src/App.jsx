@@ -22,6 +22,7 @@ import Community from "./pages/Community.jsx";
 import PostDetail from "./pages/PostDetail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import VerifyEmail from "./pages/VerifyEmail.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/celebrities" element={<Celebrities />} />
           <Route path="/celebrities/:id" element={<CelebrityProfile />} />
           <Route path="/concerts" element={<Concerts />} />

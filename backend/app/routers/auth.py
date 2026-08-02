@@ -10,21 +10,31 @@ from app.deps import get_current_user
 from app.models.celebrity import CelebrityProfile
 from app.models.referral import ReferralLink, ReferralLinkStatus
 from app.models.user import User, RoleEnum
-from app.schemas.auth import AvatarUpdate, Token, UserCreate, UserRead, VerifyEmailRequest
+from app.schemas.auth import (
+    AvatarUpdate,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    Token,
+    UserCreate,
+    UserRead,
+    VerifyEmailRequest,
+)
 from app.security import create_access_token, hash_password, verify_password
-from app.services.email import send_verification_email
+from app.services.email import send_password_reset_email, send_verification_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-VERIFICATION_CODE_TTL_MINUTES = 15
+CODE_TTL_MINUTES = 15
+
+
+def _generate_code() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
 
 
 def _issue_verification_code(user: User) -> str:
-    code = f"{secrets.randbelow(1_000_000):06d}"
+    code = _generate_code()
     user.email_verification_code = code
-    user.email_verification_expires_at = datetime.utcnow() + timedelta(
-        minutes=VERIFICATION_CODE_TTL_MINUTES
-    )
+    user.email_verification_expires_at = datetime.utcnow() + timedelta(minutes=CODE_TTL_MINUTES)
     return code
 
 
@@ -159,3 +169,39 @@ def resend_verification(
     session.commit()
     send_verification_email(user.email, code)
     return {"status": "sent"}
+
+
+@router.post("/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest, session: Session = Depends(get_session)):
+    user = session.exec(select(User).where(User.email == payload.email)).first()
+    if user:
+        code = _generate_code()
+        user.password_reset_code = code
+        user.password_reset_expires_at = datetime.utcnow() + timedelta(minutes=CODE_TTL_MINUTES)
+        session.add(user)
+        session.commit()
+        send_password_reset_email(user.email, code)
+
+    # Always the same response, whether or not the email exists — avoids leaking
+    # which addresses are registered.
+    return {"status": "sent"}
+
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordRequest, session: Session = Depends(get_session)):
+    user = session.exec(select(User).where(User.email == payload.email)).first()
+    if (
+        not user
+        or not user.password_reset_code
+        or user.password_reset_code != payload.code
+        or not user.password_reset_expires_at
+        or datetime.utcnow() > user.password_reset_expires_at
+    ):
+        raise HTTPException(status_code=400, detail="Invalid or expired reset code")
+
+    user.hashed_password = hash_password(payload.new_password)
+    user.password_reset_code = None
+    user.password_reset_expires_at = None
+    session.add(user)
+    session.commit()
+    return {"status": "reset"}

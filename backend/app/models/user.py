@@ -26,4 +26,6 @@ class User(SQLModel, table=True):
     is_email_verified: bool = False
     email_verification_code: str | None = None
     email_verification_expires_at: datetime | None = None
+    password_reset_code: str | None = None
+    password_reset_expires_at: datetime | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
