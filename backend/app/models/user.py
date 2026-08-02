@@ -22,4 +22,7 @@ class User(SQLModel, table=True):
     avatar_url: str | None = None
     wallet_balance_kobo: int = 0
     wallet_held_kobo: int = 0
+    is_email_verified: bool = False
+    email_verification_code: str | None = None
+    email_verification_expires_at: datetime | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)

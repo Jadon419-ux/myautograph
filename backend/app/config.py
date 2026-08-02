@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     cors_origins_raw: str = "http://localhost:5173,http://127.0.0.1:5173"
     paystack_secret_key: str = ""
     frontend_base_url: str = "http://localhost:5173"
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
 
     class Config:
         env_file = ".env"

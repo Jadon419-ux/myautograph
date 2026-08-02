@@ -38,7 +38,7 @@ export default function Signup() {
     setSubmitting(true);
     try {
       await register(form);
-      navigate("/dashboard");
+      navigate("/verify-email");
     } catch (err) {
       setError(err.response?.data?.detail || "Sign up failed. Please try again.");
     } finally {

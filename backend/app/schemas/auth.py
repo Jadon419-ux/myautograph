@@ -21,6 +21,7 @@ class UserRead(BaseModel):
     full_name: str
     role: RoleEnum
     avatar_url: str | None = None
+    is_email_verified: bool
     created_at: datetime
 
 
@@ -31,3 +32,7 @@ class AvatarUpdate(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class VerifyEmailRequest(BaseModel):
+    code: str

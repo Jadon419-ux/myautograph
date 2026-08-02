@@ -84,7 +84,9 @@ def on_startup():
 
         users_needing_backfill = session.exec(
             select(User).where(
-                User.wallet_balance_kobo.is_(None) | User.wallet_held_kobo.is_(None)
+                User.wallet_balance_kobo.is_(None)
+                | User.wallet_held_kobo.is_(None)
+                | User.is_email_verified.is_(None)
             )
         ).all()
         for backfill_user in users_needing_backfill:
@@ -92,6 +94,9 @@ def on_startup():
                 backfill_user.wallet_balance_kobo = 0
             if backfill_user.wallet_held_kobo is None:
                 backfill_user.wallet_held_kobo = 0
+            if backfill_user.is_email_verified is None:
+                # Grandfather existing accounts — email verification only applies going forward.
+                backfill_user.is_email_verified = True
             session.add(backfill_user)
         if users_needing_backfill:
             session.commit()

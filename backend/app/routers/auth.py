@@ -1,4 +1,5 @@
-from datetime import datetime
+import secrets
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -9,10 +10,22 @@ from app.deps import get_current_user
 from app.models.celebrity import CelebrityProfile
 from app.models.referral import ReferralLink, ReferralLinkStatus
 from app.models.user import User, RoleEnum
-from app.schemas.auth import AvatarUpdate, Token, UserCreate, UserRead
+from app.schemas.auth import AvatarUpdate, Token, UserCreate, UserRead, VerifyEmailRequest
 from app.security import create_access_token, hash_password, verify_password
+from app.services.email import send_verification_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+VERIFICATION_CODE_TTL_MINUTES = 15
+
+
+def _issue_verification_code(user: User) -> str:
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    user.email_verification_code = code
+    user.email_verification_expires_at = datetime.utcnow() + timedelta(
+        minutes=VERIFICATION_CODE_TTL_MINUTES
+    )
+    return code
 
 
 @router.post("/register", response_model=UserRead)
@@ -48,9 +61,11 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
         full_name=payload.full_name,
         role=payload.role,
     )
+    code = _issue_verification_code(user)
     session.add(user)
     session.commit()
     session.refresh(user)
+    send_verification_email(user.email, code)
 
     if user.role == RoleEnum.celebrity:
         profile = CelebrityProfile(
@@ -102,3 +117,41 @@ def update_avatar(
     session.commit()
     session.refresh(user)
     return user
+
+
+@router.post("/verify-email", response_model=UserRead)
+def verify_email(
+    payload: VerifyEmailRequest,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    if user.is_email_verified:
+        return user
+
+    if not user.email_verification_code or user.email_verification_code != payload.code:
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+    if not user.email_verification_expires_at or datetime.utcnow() > user.email_verification_expires_at:
+        raise HTTPException(status_code=400, detail="This code has expired. Request a new one.")
+
+    user.is_email_verified = True
+    user.email_verification_code = None
+    user.email_verification_expires_at = None
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+@router.post("/resend-verification")
+def resend_verification(
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    if user.is_email_verified:
+        raise HTTPException(status_code=400, detail="This email is already verified")
+
+    code = _issue_verification_code(user)
+    session.add(user)
+    session.commit()
+    send_verification_email(user.email, code)
+    return {"status": "sent"}

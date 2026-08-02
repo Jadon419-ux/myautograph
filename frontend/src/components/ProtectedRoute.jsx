@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 
-export default function ProtectedRoute({ allow, children }) {
+export default function ProtectedRoute({ allow, skipVerifiedCheck, children }) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -10,6 +10,10 @@ export default function ProtectedRoute({ allow, children }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!skipVerifiedCheck && !user.is_email_verified) {
+    return <Navigate to="/verify-email" replace />;
   }
 
   if (allow && !allow.includes(user.role)) {

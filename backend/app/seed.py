@@ -29,30 +29,35 @@ def seed_demo_data() -> None:
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name="Frankie Fan",
             role=RoleEnum.fan,
+            is_email_verified=True,
         )
         celeb_user_1 = User(
             email="celeb@demo.com",
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name="Cassidy Star",
             role=RoleEnum.celebrity,
+            is_email_verified=True,
         )
         celeb_user_2 = User(
             email="celeb2@demo.com",
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name="Miles Rivera",
             role=RoleEnum.celebrity,
+            is_email_verified=True,
         )
         agent = User(
             email="agent@demo.com",
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name="Alex Agent",
             role=RoleEnum.agent,
+            is_email_verified=True,
         )
         manager = User(
             email="manager@demo.com",
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name="Morgan Manager",
             role=RoleEnum.manager,
+            is_email_verified=True,
         )
         session.add_all([fan, celeb_user_1, celeb_user_2, agent, manager])
         session.commit()
