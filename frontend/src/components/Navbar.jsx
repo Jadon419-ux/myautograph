@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 import iconMark from "../assets/icon-mark.png";
+import WalletMenu from "./WalletMenu.jsx";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -58,6 +59,7 @@ export default function Navbar() {
                 </span>
                 Dashboard
               </Link>
+              <WalletMenu />
               <button onClick={handleLogout} className="btn-secondary">
                 Log out
               </button>
