@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import client from "../api/client.js";
+import { useAuth } from "../auth/AuthContext.jsx";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -13,12 +14,23 @@ const TICKET_STATUS_STYLES = {
   cancelled: "bg-red-100 text-red-700",
 };
 
+const ACCOUNT_TYPE_LABELS = {
+  fan: "Fan",
+  celebrity: "Celebrity",
+  agent: "Agent",
+  manager: "Manager",
+  admin: "Admin",
+  sales_agent: "Sales agent",
+};
+
 export default function WalletMenu() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [tickets, setTickets] = useState([]);
+  const [followerCount, setFollowerCount] = useState(null);
   const [fundAmount, setFundAmount] = useState("");
   const [fundStatus, setFundStatus] = useState("");
 
@@ -26,6 +38,7 @@ export default function WalletMenu() {
     client.get("/wallet/me").then(({ data }) => setWallet(data));
     client.get("/wallet/transactions").then(({ data }) => setTransactions(data));
     client.get("/tickets/my").then(({ data }) => setTickets(data));
+    client.get("/social/followers/me").then(({ data }) => setFollowerCount(data.follower_count));
     setLoaded(true);
   }
 
@@ -70,6 +83,34 @@ export default function WalletMenu() {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 z-50 mt-2 max-h-[80vh] w-80 overflow-y-auto rounded-lg border border-brand-border bg-white p-4 shadow-lg">
             <div>
+              <h3 className="text-sm font-semibold text-brand-charcoal">About</h3>
+              <div className="mt-2 space-y-1 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-500">Name</span>
+                  <span className="text-brand-charcoal">{user?.full_name}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-500">Phone number</span>
+                  <span className="text-brand-charcoal">{user?.phone_number || "—"}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-500">Email</span>
+                  <span className="truncate text-brand-charcoal">{user?.email}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-500">Account type</span>
+                  <span className="text-brand-charcoal">
+                    {ACCOUNT_TYPE_LABELS[user?.role] || user?.role}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-500">Followers</span>
+                  <span className="text-brand-charcoal">{followerCount ?? "—"}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 border-t border-brand-border pt-3">
               <p className="text-sm text-gray-500">Wallet balance</p>
               <p className="mt-1 text-2xl font-semibold text-brand-greenDark">
                 {formatNaira(wallet?.balance_kobo ?? 0)}

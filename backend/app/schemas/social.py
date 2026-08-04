@@ -45,3 +45,7 @@ class LikeStatus(BaseModel):
 
 class FollowStatus(BaseModel):
     following: bool
+
+
+class FollowerCount(BaseModel):
+    follower_count: int

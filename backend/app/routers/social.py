@@ -5,10 +5,11 @@ from app.database import get_session
 from app.deps import get_current_user
 from app.models.celebrity import CelebrityProfile
 from app.models.social import CelebrityFollow, Comment, FanFollow, Post, PostLike
-from app.models.user import User
+from app.models.user import RoleEnum, User
 from app.schemas.social import (
     CommentCreate,
     CommentRead,
+    FollowerCount,
     FollowStatus,
     LikeStatus,
     PostCreate,
@@ -273,6 +274,29 @@ def toggle_follow_user(
     session.add(FanFollow(follower_user_id=user.id, followee_user_id=followee_user_id))
     session.commit()
     return FollowStatus(following=True)
+
+
+@router.get("/followers/me", response_model=FollowerCount)
+def my_follower_count(
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    if user.role == RoleEnum.celebrity:
+        profile = session.exec(
+            select(CelebrityProfile).where(CelebrityProfile.user_id == user.id)
+        ).first()
+        count = (
+            len(session.exec(
+                select(CelebrityFollow).where(CelebrityFollow.celebrity_id == profile.id)
+            ).all())
+            if profile
+            else 0
+        )
+    else:
+        count = len(
+            session.exec(select(FanFollow).where(FanFollow.followee_user_id == user.id)).all()
+        )
+    return FollowerCount(follower_count=count)
 
 
 @router.get("/following/celebrities", response_model=list[int])
