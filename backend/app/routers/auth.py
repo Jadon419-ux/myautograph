@@ -50,6 +50,11 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
     if not payload.phone_number or not payload.phone_number.strip():
         raise HTTPException(status_code=400, detail="Phone number is required")
 
+    phone_number = payload.phone_number.strip()
+    existing_phone = session.exec(select(User).where(User.phone_number == phone_number)).first()
+    if existing_phone:
+        raise HTTPException(status_code=400, detail="This phone number is already registered")
+
     if payload.role == RoleEnum.admin:
         raise HTTPException(status_code=400, detail="Admin accounts cannot be self-registered")
 
@@ -72,7 +77,7 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
         email=payload.email,
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
-        phone_number=payload.phone_number.strip(),
+        phone_number=phone_number,
         role=payload.role,
     )
     code = _issue_verification_code(user)
