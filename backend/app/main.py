@@ -71,6 +71,7 @@ def on_startup():
             select(CelebrityProfile).where(
                 CelebrityProfile.verification_status.is_(None)
                 | (CelebrityProfile.created_at.is_(None))
+                | (CelebrityProfile.rejection_reason.is_(None))
             )
         ).all()
         for profile in celebs_needing_backfill:
@@ -78,6 +79,8 @@ def on_startup():
                 profile.verification_status = VerificationStatus.approved
             if profile.created_at is None:
                 profile.created_at = datetime.utcnow()
+            if profile.rejection_reason is None:
+                profile.rejection_reason = ""
             session.add(profile)
         if celebs_needing_backfill:
             session.commit()
