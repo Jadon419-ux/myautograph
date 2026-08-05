@@ -111,6 +111,26 @@ export default function WalletMenu() {
             </div>
 
             <div className="mt-4 border-t border-brand-border pt-3">
+              <h3 className="text-sm font-semibold text-brand-charcoal">Buy tickets</h3>
+              <div className="mt-2 flex gap-2">
+                <Link
+                  to="/concerts"
+                  onClick={() => setOpen(false)}
+                  className="btn-secondary flex-1 text-center text-xs"
+                >
+                  Social events
+                </Link>
+                <Link
+                  to="/transport"
+                  onClick={() => setOpen(false)}
+                  className="btn-secondary flex-1 text-center text-xs"
+                >
+                  Transport
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-4 border-t border-brand-border pt-3">
               <p className="text-sm text-gray-500">Wallet balance</p>
               <p className="mt-1 text-2xl font-semibold text-brand-greenDark">
                 {formatNaira(wallet?.balance_kobo ?? 0)}

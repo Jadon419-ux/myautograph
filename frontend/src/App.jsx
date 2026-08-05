@@ -23,6 +23,8 @@ import PostDetail from "./pages/PostDetail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import VerifyEmail from "./pages/VerifyEmail.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
+import Transport from "./pages/Transport.jsx";
+import TransportCompanyDetail from "./pages/TransportCompanyDetail.jsx";
 
 export default function App() {
   return (
@@ -76,6 +78,22 @@ export default function App() {
             element={
               <ProtectedRoute skipVerifiedCheck>
                 <VerifyEmail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/transport"
+            element={
+              <ProtectedRoute>
+                <Transport />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/transport/:id"
+            element={
+              <ProtectedRoute>
+                <TransportCompanyDetail />
               </ProtectedRoute>
             }
           />

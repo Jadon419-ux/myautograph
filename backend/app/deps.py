@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 
 from app.database import get_session
 from app.models.celebrity import CelebrityProfile
+from app.models.transport import TransportCompany
 from app.models.user import User, RoleEnum
 from app.security import decode_access_token
 
@@ -47,3 +48,12 @@ def get_celebrity_profile_for_user(user: User, session: Session) -> CelebrityPro
     if profile is None:
         raise HTTPException(status_code=404, detail="Celebrity profile not found")
     return profile
+
+
+def get_transport_company_for_user(user: User, session: Session) -> TransportCompany:
+    company = session.exec(
+        select(TransportCompany).where(TransportCompany.owner_user_id == user.id)
+    ).first()
+    if company is None:
+        raise HTTPException(status_code=404, detail="Transport company not found")
+    return company

@@ -25,6 +25,7 @@ from app.routers import (
     star_auction,
     streams,
     tickets,
+    transport,
     wallet,
 )
 
@@ -133,6 +134,7 @@ app.include_router(admin.router)
 app.include_router(wallet.router)
 app.include_router(merchandise.router)
 app.include_router(star_auction.router)
+app.include_router(transport.router)
 
 
 @app.get("/health")
