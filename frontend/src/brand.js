@@ -4,5 +4,6 @@ export const BRAND = {
   email: "info.myautographma@gmail.com",
   website: "www.myautographma.com",
   phone: "+234 901 967 2650",
+  instagram: "https://www.instagram.com/myautograp_app?igsh=MXdoaXo4YWx3Z2E5",
   registrationNumber: "8730557",
 };

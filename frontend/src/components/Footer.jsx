@@ -1,6 +1,6 @@
 import { BRAND } from "../brand.js";
 import BrandAccent from "./BrandAccent.jsx";
-import { BuildingIcon, GlobeIcon, MailIcon, PhoneIcon } from "./ContactIcons.jsx";
+import { BuildingIcon, GlobeIcon, InstagramIcon, MailIcon, PhoneIcon } from "./ContactIcons.jsx";
 
 export default function Footer() {
   return (
@@ -24,14 +24,26 @@ export default function Footer() {
               <GlobeIcon />
               <span>{BRAND.website}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm">
+            <a href={`mailto:${BRAND.email}`} className="flex items-center gap-2 text-sm hover:text-white">
               <MailIcon />
               <span>{BRAND.email}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
+            </a>
+            <a
+              href={`tel:${BRAND.phone.replace(/\s+/g, "")}`}
+              className="flex items-center gap-2 text-sm hover:text-white"
+            >
               <PhoneIcon />
               <span>{BRAND.phone}</span>
-            </div>
+            </a>
+            <a
+              href={BRAND.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm hover:text-white"
+            >
+              <InstagramIcon />
+              <span>Instagram</span>
+            </a>
           </div>
         </div>
 
