@@ -5,6 +5,7 @@ import client from "../api/client.js";
 export default function Celebrities() {
   const [celebrities, setCelebrities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     client
@@ -13,15 +14,30 @@ export default function Celebrities() {
       .finally(() => setLoading(false));
   }, []);
 
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredCelebrities = normalizedQuery
+    ? celebrities.filter((c) =>
+        [c.stage_name, c.category].some((field) => field?.toLowerCase().includes(normalizedQuery))
+      )
+    : celebrities;
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
       <h1 className="text-2xl font-semibold text-brand-charcoal">Celebrities</h1>
       <p className="mt-1 text-sm text-gray-500">Browse profiles and request an autograph.</p>
 
+      <input
+        type="search"
+        placeholder="Search celebrities by name or category..."
+        className="input-field mt-6 max-w-md"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+
       {loading && <p className="mt-8 text-sm text-gray-500">Loading...</p>}
 
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {celebrities.map((c) => (
+        {filteredCelebrities.map((c) => (
           <Link key={c.id} to={`/celebrities/${c.id}`} className="card block hover:shadow-md">
             <div className="flex items-center gap-3">
               <span className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-brand-gray">
@@ -51,6 +67,9 @@ export default function Celebrities() {
 
       {!loading && celebrities.length === 0 && (
         <p className="mt-8 text-sm text-gray-500">No celebrities yet.</p>
+      )}
+      {!loading && celebrities.length > 0 && filteredCelebrities.length === 0 && (
+        <p className="mt-8 text-sm text-gray-500">No celebrities match "{query}".</p>
       )}
     </div>
   );
