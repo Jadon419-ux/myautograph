@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import logoSquare from "../assets/logo-square.jpg";
 import { BRAND } from "../brand.js";
+import Typewriter from "../components/Typewriter.jsx";
 
 const roles = [
   {
@@ -34,7 +35,9 @@ export default function Landing() {
     <div>
       <section className="mx-auto flex max-w-6xl flex-col items-center gap-8 px-6 py-20 text-center">
         <img src={logoSquare} alt="My Autograph" className="h-32 w-32 rounded-full object-cover shadow-sm" />
-        <p className="text-sm italic text-brand-green">{BRAND.tagline}</p>
+        <p className="text-sm italic text-brand-green">
+          <Typewriter text={BRAND.tagline} />
+        </p>
         <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-brand-charcoal sm:text-5xl">
           The direct line between celebrities and the fans who follow them.
         </h1>
