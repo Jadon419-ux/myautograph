@@ -71,7 +71,7 @@ export default function Landing() {
                 <h3 className="text-lg font-semibold text-brand-green">{role.title}</h3>
                 <p className="mt-2 text-sm text-gray-600">{role.description}</p>
                 <span className="mt-4 inline-block text-sm font-medium text-brand-charcoal">
-                  Enter this sector &rarr;
+                  Enter this sector
                 </span>
               </Link>
             ))}
