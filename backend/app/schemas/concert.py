@@ -10,6 +10,7 @@ class ConcertCreate(BaseModel):
     venue: str
     event_date: datetime
     description: str = ""
+    celebrity_id: int | None = None
 
 
 class ConcertRead(BaseModel):

@@ -5,6 +5,7 @@ from app.database import get_session
 from app.deps import require_role
 from app.models.celebrity import CelebrityProfile
 from app.models.concert import Concert, ConcertCelebrityLink
+from app.models.roster import ManagerRoster
 from app.models.user import RoleEnum, User
 from app.routers.celebrities import _to_read as _celebrity_to_read
 from app.schemas.concert import ConcertCreate, ConcertRead
@@ -46,12 +47,33 @@ def get_concert(concert_id: int, session: Session = Depends(get_session)):
 def create_concert(
     payload: ConcertCreate,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent)),
+    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
-    concert = Concert(agent_id=user.id, **payload.model_dump())
+    celebrity_id = payload.celebrity_id
+
+    if user.role == RoleEnum.manager:
+        if not celebrity_id:
+            raise HTTPException(status_code=400, detail="Select a celebrity (star) for this ticket")
+        in_roster = session.exec(
+            select(ManagerRoster).where(
+                ManagerRoster.manager_id == user.id, ManagerRoster.celebrity_id == celebrity_id
+            )
+        ).first()
+        if not in_roster:
+            raise HTTPException(status_code=404, detail="Celebrity not found in your roster")
+    elif celebrity_id is not None and not session.get(CelebrityProfile, celebrity_id):
+        raise HTTPException(status_code=404, detail="Celebrity not found")
+
+    concert_data = payload.model_dump(exclude={"celebrity_id"})
+    concert = Concert(agent_id=user.id, **concert_data)
     session.add(concert)
     session.commit()
     session.refresh(concert)
+
+    if celebrity_id is not None:
+        session.add(ConcertCelebrityLink(concert_id=concert.id, celebrity_id=celebrity_id))
+        session.commit()
+
     return _to_read(session, concert)
 
 
@@ -60,13 +82,13 @@ def update_concert(
     concert_id: int,
     payload: ConcertCreate,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent)),
+    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
     concert = session.get(Concert, concert_id)
     if not concert or concert.agent_id != user.id:
         raise HTTPException(status_code=404, detail="Concert not found")
 
-    for key, value in payload.model_dump().items():
+    for key, value in payload.model_dump(exclude={"celebrity_id"}).items():
         setattr(concert, key, value)
     session.add(concert)
     session.commit()
@@ -78,7 +100,7 @@ def update_concert(
 def delete_concert(
     concert_id: int,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent)),
+    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
     concert = session.get(Concert, concert_id)
     if not concert or concert.agent_id != user.id:
@@ -92,7 +114,7 @@ def link_celebrity(
     concert_id: int,
     celebrity_id: int,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent)),
+    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
     concert = session.get(Concert, concert_id)
     if not concert or concert.agent_id != user.id:

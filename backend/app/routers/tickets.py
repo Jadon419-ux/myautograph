@@ -15,6 +15,7 @@ from app.models.ticket_category import TicketCategory
 from app.models.ticket_order import TicketOrder, TicketOrderStatus
 from app.models.user import RoleEnum, User
 from app.schemas.ticket import (
+    AgentInviteCreate,
     ConcertAnalyticsRead,
     ReferralInviteCreate,
     ReferralLinkRead,
@@ -55,7 +56,7 @@ def create_category(
     concert_id: int,
     payload: TicketCategoryCreate,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent)),
+    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
     _get_owned_concert(session, concert_id, user)
     category = TicketCategory(concert_id=concert_id, **payload.model_dump())
@@ -77,7 +78,7 @@ def update_category(
     category_id: int,
     payload: TicketCategoryUpdate,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent)),
+    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
     category = _get_owned_category(session, category_id, user)
     for key, value in payload.model_dump(exclude_unset=True).items():
@@ -92,7 +93,7 @@ def update_category(
 def delete_category(
     category_id: int,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent)),
+    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
     category = _get_owned_category(session, category_id, user)
     if category.quantity_sold > 0:
@@ -165,10 +166,39 @@ def invite_sales_agent(
     return link
 
 
+@router.post("/concerts/{concert_id}/referrals/agents", response_model=ReferralLinkRead)
+def invite_agent_seller(
+    concert_id: int,
+    payload: AgentInviteCreate,
+    session: Session = Depends(get_session),
+    user: User = Depends(require_role(RoleEnum.manager)),
+):
+    _get_owned_concert(session, concert_id, user)
+
+    agent = session.exec(select(User).where(User.email == payload.email)).first()
+    if not agent or agent.role != RoleEnum.agent:
+        raise HTTPException(status_code=404, detail="No agent account found with that email")
+
+    link = ReferralLink(
+        concert_id=concert_id,
+        code=uuid.uuid4().hex[:10],
+        inviter_user_id=user.id,
+        invitee_role=RoleEnum.agent,
+        invitee_user_id=agent.id,
+        commission_percent=payload.commission_percent,
+    )
+    session.add(link)
+    session.commit()
+    session.refresh(link)
+    return link
+
+
 @router.get("/referrals/mine", response_model=list[ReferralLinkRead])
 def list_my_referrals(
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.celebrity, RoleEnum.sales_agent, RoleEnum.agent)),
+    user: User = Depends(
+        require_role(RoleEnum.celebrity, RoleEnum.sales_agent, RoleEnum.agent, RoleEnum.manager)
+    ),
 ):
     return session.exec(
         select(ReferralLink).where(
@@ -181,7 +211,7 @@ def list_my_referrals(
 def accept_referral(
     referral_id: int,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.celebrity, RoleEnum.sales_agent)),
+    user: User = Depends(require_role(RoleEnum.celebrity, RoleEnum.sales_agent, RoleEnum.agent)),
 ):
     link = session.get(ReferralLink, referral_id)
     if not link or link.invitee_user_id != user.id or link.status != ReferralLinkStatus.pending:
@@ -198,7 +228,7 @@ def accept_referral(
 def decline_referral(
     referral_id: int,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.celebrity, RoleEnum.sales_agent)),
+    user: User = Depends(require_role(RoleEnum.celebrity, RoleEnum.sales_agent, RoleEnum.agent)),
 ):
     link = session.get(ReferralLink, referral_id)
     if not link or link.invitee_user_id != user.id or link.status != ReferralLinkStatus.pending:
@@ -348,7 +378,7 @@ def _get_ticket_for_organizer(session: Session, qr_token: str, user: User) -> Ti
 def preview_ticket(
     qr_token: str,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent)),
+    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
     return _get_ticket_for_organizer(session, qr_token, user)
 
@@ -357,7 +387,7 @@ def preview_ticket(
 def check_in_ticket(
     qr_token: str,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent)),
+    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
     ticket = _get_ticket_for_organizer(session, qr_token, user)
     if ticket.status == TicketStatus.checked_in:
@@ -380,7 +410,7 @@ def check_in_ticket(
 def get_analytics(
     concert_id: int,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent)),
+    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
     _get_owned_concert(session, concert_id, user)
 

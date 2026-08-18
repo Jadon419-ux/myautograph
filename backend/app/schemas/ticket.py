@@ -47,6 +47,11 @@ class SalesAgentInviteCreate(BaseModel):
     commission_percent: float
 
 
+class AgentInviteCreate(BaseModel):
+    email: str
+    commission_percent: float
+
+
 class ReferralLinkRead(BaseModel):
     id: int
     concert_id: int

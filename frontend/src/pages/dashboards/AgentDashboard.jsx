@@ -19,6 +19,7 @@ export default function AgentDashboard() {
   const [selectedConcertId, setSelectedConcertId] = useState(null);
   const [categories, setCategories] = useState([]);
   const [referrals, setReferrals] = useState([]);
+  const [myInvites, setMyInvites] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [categoryForm, setCategoryForm] = useState({
     name: "",
@@ -39,6 +40,18 @@ export default function AgentDashboard() {
     setConcerts(data.filter((c) => c.agent_id === user.id));
     const { data: allCelebrities } = await client.get("/celebrities");
     setCelebrities(allCelebrities);
+    const { data: invites } = await client.get("/tickets/referrals/mine");
+    setMyInvites(invites.filter((r) => r.invitee_role === "agent"));
+  }
+
+  async function respondToInvite(id, action) {
+    setError("");
+    try {
+      await client.post(`/tickets/referrals/${id}/${action}`);
+      loadAll();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Could not respond to invite.");
+    }
   }
 
   useEffect(() => {
@@ -237,6 +250,46 @@ export default function AgentDashboard() {
           {concerts.length === 0 && <p className="text-sm text-gray-500">No concerts yet.</p>}
         </div>
       </section>
+
+      {myInvites.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-lg font-semibold text-brand-charcoal">Ticket sales invites</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Managers can invite you to help sell tickets for their star's events.
+          </p>
+          <div className="mt-3 space-y-3">
+            {myInvites
+              .filter((r) => r.status === "pending")
+              .map((r) => (
+                <div key={r.id} className="card flex items-center justify-between gap-4">
+                  <p className="text-sm text-gray-600">
+                    Invite to sell tickets for concert #{r.concert_id} — {r.commission_percent}% commission
+                  </p>
+                  <div className="flex shrink-0 gap-2">
+                    <button className="btn-primary" onClick={() => respondToInvite(r.id, "accept")}>
+                      Accept
+                    </button>
+                    <button className="btn-secondary" onClick={() => respondToInvite(r.id, "decline")}>
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
+            {myInvites
+              .filter((r) => r.status === "accepted")
+              .map((r) => (
+                <div key={r.id} className="card">
+                  <p className="text-sm text-gray-600">
+                    Concert #{r.concert_id} — {r.commission_percent}% commission
+                  </p>
+                  <p className="mt-2 break-all text-xs text-gray-500">
+                    {`${window.location.origin}/concerts/${r.concert_id}?ref=${r.code}`}
+                  </p>
+                </div>
+              ))}
+          </div>
+        </section>
+      )}
 
       {linkedCelebrities.length > 0 && (
         <section className="mt-10">
