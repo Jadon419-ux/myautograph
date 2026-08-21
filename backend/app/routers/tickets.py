@@ -19,6 +19,7 @@ from app.schemas.ticket import (
     ConcertAnalyticsRead,
     ReferralInviteCreate,
     ReferralLinkRead,
+    ReferralPreviewRead,
     SalesAgentInviteCreate,
     SellerBreakdown,
     TicketCategoryCreate,
@@ -28,7 +29,11 @@ from app.schemas.ticket import (
     TicketOrderRead,
     TicketRead,
 )
-from app.services.paystack import initialize_transaction
+from app.services.paystack import (
+    AGENT_REFERRAL_COMMISSION_PERCENT,
+    AGENT_REFERRAL_MARKUP_PERCENT,
+    initialize_transaction,
+)
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -185,12 +190,25 @@ def invite_agent_seller(
         inviter_user_id=user.id,
         invitee_role=RoleEnum.agent,
         invitee_user_id=agent.id,
-        commission_percent=payload.commission_percent,
+        commission_percent=AGENT_REFERRAL_COMMISSION_PERCENT,
     )
     session.add(link)
     session.commit()
     session.refresh(link)
     return link
+
+
+@router.get("/referrals/code/{code}", response_model=ReferralPreviewRead)
+def preview_referral_code(code: str, session: Session = Depends(get_session)):
+    link = session.exec(
+        select(ReferralLink).where(
+            ReferralLink.code == code, ReferralLink.status == ReferralLinkStatus.accepted
+        )
+    ).first()
+    if not link:
+        raise HTTPException(status_code=404, detail="Referral code not found")
+    markup_percent = AGENT_REFERRAL_MARKUP_PERCENT if link.invitee_role == RoleEnum.agent else 0.0
+    return ReferralPreviewRead(invitee_role=link.invitee_role, markup_percent=markup_percent)
 
 
 @router.get("/referrals/mine", response_model=list[ReferralLinkRead])
@@ -273,6 +291,7 @@ def create_order(
         raise HTTPException(status_code=400, detail="Not enough tickets available")
 
     referral_link_id = None
+    is_agent_referral = False
     if payload.referral_code:
         link = session.exec(
             select(ReferralLink).where(
@@ -284,12 +303,15 @@ def create_order(
         if not link:
             raise HTTPException(status_code=400, detail="Invalid referral code")
         referral_link_id = link.id
+        is_agent_referral = link.invitee_role == RoleEnum.agent
 
     category.quantity_sold += payload.quantity
     session.add(category)
 
     is_free = category.is_free or category.price_kobo == 0
     amount_kobo = 0 if is_free else category.price_kobo * payload.quantity
+    if is_agent_referral and not is_free:
+        amount_kobo = round(amount_kobo * (1 + AGENT_REFERRAL_MARKUP_PERCENT / 100))
 
     order = TicketOrder(
         buyer_user_id=user.id,

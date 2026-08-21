@@ -5,11 +5,21 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.config import settings
+from app.models.concert import Concert
+from app.models.referral import ReferralLink
 from app.models.ticket import Ticket, TicketStatus
 from app.models.ticket_category import TicketCategory
 from app.models.ticket_order import TicketOrder, TicketOrderStatus
+from app.models.user import RoleEnum, User
+from app.models.wallet import WalletTransaction, WalletTransactionType
 
 PAYSTACK_BASE_URL = "https://api.paystack.co"
+
+# An agent-referred ticket sale costs the buyer 10% more; of that markup,
+# a fixed 4 percentage points (of the original price) goes to the referring
+# agent's wallet, and the remaining 6 stays with the platform.
+AGENT_REFERRAL_MARKUP_PERCENT = 10.0
+AGENT_REFERRAL_COMMISSION_PERCENT = 4.0
 
 
 def initialize_transaction(email: str, amount_kobo: int, reference: str) -> dict:
@@ -66,6 +76,30 @@ def verify_and_finalize(session: Session, reference: str) -> TicketOrder:
         for ticket in tickets:
             ticket.status = TicketStatus.valid
             session.add(ticket)
+
+        referral_link_id = next((t.referral_link_id for t in tickets if t.referral_link_id), None)
+        if referral_link_id:
+            link = session.get(ReferralLink, referral_link_id)
+            if link and link.invitee_role == RoleEnum.agent and link.invitee_user_id:
+                category = session.get(TicketCategory, order.ticket_category_id)
+                original_amount_kobo = (category.price_kobo * order.quantity) if category else 0
+                commission_kobo = round(
+                    original_amount_kobo * AGENT_REFERRAL_COMMISSION_PERCENT / 100
+                )
+                if commission_kobo > 0:
+                    agent_user = session.get(User, link.invitee_user_id)
+                    if agent_user:
+                        concert = session.get(Concert, order.concert_id)
+                        agent_user.wallet_balance_kobo += commission_kobo
+                        session.add(agent_user)
+                        session.add(
+                            WalletTransaction(
+                                user_id=agent_user.id,
+                                type=WalletTransactionType.ticket_referral_commission,
+                                amount_kobo=commission_kobo,
+                                description=f"Ticket referral commission: {concert.title if concert else ''}",
+                            )
+                        )
     else:
         order.status = TicketOrderStatus.failed
         for ticket in tickets:

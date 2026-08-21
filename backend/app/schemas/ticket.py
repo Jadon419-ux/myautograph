@@ -49,7 +49,11 @@ class SalesAgentInviteCreate(BaseModel):
 
 class AgentInviteCreate(BaseModel):
     email: str
-    commission_percent: float
+
+
+class ReferralPreviewRead(BaseModel):
+    invitee_role: RoleEnum
+    markup_percent: float
 
 
 class ReferralLinkRead(BaseModel):

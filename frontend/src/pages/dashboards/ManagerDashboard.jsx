@@ -43,7 +43,7 @@ export default function ManagerDashboard() {
     sales_start: "",
     sales_end: "",
   });
-  const [agentInviteForm, setAgentInviteForm] = useState({ email: "", commission_percent: "" });
+  const [agentInviteForm, setAgentInviteForm] = useState({ email: "" });
   const [showScanner, setShowScanner] = useState(false);
   const [manualToken, setManualToken] = useState("");
   const [checkinResult, setCheckinResult] = useState(null);
@@ -140,9 +140,8 @@ export default function ManagerDashboard() {
     try {
       await client.post(`/tickets/concerts/${selectedConcertId}/referrals/agents`, {
         email: agentInviteForm.email,
-        commission_percent: Number(agentInviteForm.commission_percent),
       });
-      setAgentInviteForm({ email: "", commission_percent: "" });
+      setAgentInviteForm({ email: "" });
       loadTicketing(selectedConcertId);
     } catch (err) {
       setTicketError(err.response?.data?.detail || "Could not send invite.");
@@ -441,6 +440,10 @@ export default function ManagerDashboard() {
 
           <div className="card mt-4">
             <h3 className="font-semibold text-brand-charcoal">Invite an agent to sell tickets</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Buyers using an agent's link pay a 10% referral fee on top of the ticket price. The
+              agent automatically earns 4% of the ticket price to their wallet on each sale.
+            </p>
             <div className="mt-2 space-y-2">
               {referrals.map((r) => (
                 <div key={r.id} className="flex items-center justify-between rounded-md border border-brand-border p-2 text-sm">
@@ -458,18 +461,6 @@ export default function ManagerDashboard() {
                   className="input-field"
                   value={agentInviteForm.email}
                   onChange={(e) => setAgentInviteForm({ ...agentInviteForm, email: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="label">Commission %</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  required
-                  className="input-field"
-                  value={agentInviteForm.commission_percent}
-                  onChange={(e) => setAgentInviteForm({ ...agentInviteForm, commission_percent: e.target.value })}
                 />
               </div>
               <button type="submit" className="btn-primary">Send invite</button>
