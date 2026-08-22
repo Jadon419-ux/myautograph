@@ -3,6 +3,7 @@ import client from "../../api/client.js";
 import ShareProfileLink from "../../components/ShareProfileLink.jsx";
 import PasswordField from "../../components/PasswordField.jsx";
 import QrScanner from "../../components/QrScanner.jsx";
+import { toUtcIso } from "../../utils/datetime.js";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -87,7 +88,7 @@ export default function ManagerDashboard() {
       await client.post("/concerts", {
         title: ticketForm.title,
         venue: ticketForm.venue,
-        event_date: ticketForm.event_date,
+        event_date: toUtcIso(ticketForm.event_date),
         description: ticketForm.description,
         celebrity_id: Number(ticketForm.celebrity_id),
       });
@@ -124,8 +125,8 @@ export default function ManagerDashboard() {
         is_free: categoryForm.is_free,
         price_kobo: categoryForm.is_free ? 0 : Math.round(Number(categoryForm.price_naira) * 100),
         quantity_total: Number(categoryForm.quantity_total),
-        sales_start: categoryForm.sales_start,
-        sales_end: categoryForm.sales_end,
+        sales_start: toUtcIso(categoryForm.sales_start),
+        sales_end: toUtcIso(categoryForm.sales_end),
       });
       setCategoryForm({ name: "", is_free: false, price_naira: "", quantity_total: "", sales_start: "", sales_end: "" });
       loadTicketing(selectedConcertId);

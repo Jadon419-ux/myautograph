@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import client from "../../api/client.js";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import ShareProfileLink from "../../components/ShareProfileLink.jsx";
+import { toUtcIso } from "../../utils/datetime.js";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -211,7 +212,7 @@ export default function CelebrityDashboard() {
     e.preventDefault();
     setError("");
     try {
-      await client.post("/streams", streamForm);
+      await client.post("/streams", { ...streamForm, scheduled_at: toUtcIso(streamForm.scheduled_at) });
       setStreamForm({ title: "", embed_url: "", scheduled_at: "" });
       loadAll();
     } catch (err) {
