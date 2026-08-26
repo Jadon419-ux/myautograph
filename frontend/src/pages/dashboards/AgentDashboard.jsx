@@ -3,6 +3,7 @@ import client from "../../api/client.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import QrScanner from "../../components/QrScanner.jsx";
 import ShareProfileLink from "../../components/ShareProfileLink.jsx";
+import WithdrawalPanel from "../../components/WithdrawalPanel.jsx";
 import { toUtcIso } from "../../utils/datetime.js";
 
 function formatNaira(kobo) {
@@ -159,6 +160,13 @@ export default function AgentDashboard() {
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
       <section className="mt-8">
+        <h2 className="text-lg font-semibold text-brand-charcoal">Wallet & withdrawals</h2>
+        <div className="mt-3">
+          <WithdrawalPanel />
+        </div>
+      </section>
+
+      <section className="mt-10">
         <h2 className="text-lg font-semibold text-brand-charcoal">Create a concert</h2>
         <form onSubmit={createConcert} className="card mt-3 space-y-3">
           <div>

@@ -3,6 +3,7 @@ import client from "../../api/client.js";
 import ShareProfileLink from "../../components/ShareProfileLink.jsx";
 import PasswordField from "../../components/PasswordField.jsx";
 import QrScanner from "../../components/QrScanner.jsx";
+import WithdrawalPanel from "../../components/WithdrawalPanel.jsx";
 import { toUtcIso } from "../../utils/datetime.js";
 
 function formatNaira(kobo) {
@@ -183,6 +184,13 @@ export default function ManagerDashboard() {
       <h1 className="text-2xl font-semibold text-brand-charcoal">Manager dashboard</h1>
 
       <section className="mt-8">
+        <h2 className="text-lg font-semibold text-brand-charcoal">Wallet & withdrawals</h2>
+        <div className="mt-3">
+          <WithdrawalPanel />
+        </div>
+      </section>
+
+      <section className="mt-10">
         <h2 className="text-lg font-semibold text-brand-charcoal">My roster</h2>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {roster.map((c) => (

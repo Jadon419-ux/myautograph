@@ -57,6 +57,87 @@ def verify_transaction(reference: str) -> dict:
     return response.json()["data"]
 
 
+def list_banks() -> list[dict]:
+    if not settings.paystack_secret_key:
+        raise HTTPException(status_code=503, detail="Payments are not configured yet")
+
+    try:
+        response = httpx.get(
+            f"{PAYSTACK_BASE_URL}/bank",
+            params={"country": "nigeria", "currency": "NGN"},
+            headers={"Authorization": f"Bearer {settings.paystack_secret_key}"},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Could not reach Paystack to list banks")
+    return response.json()["data"]
+
+
+def resolve_account_number(account_number: str, bank_code: str) -> dict:
+    if not settings.paystack_secret_key:
+        raise HTTPException(status_code=503, detail="Payments are not configured yet")
+
+    try:
+        response = httpx.get(
+            f"{PAYSTACK_BASE_URL}/bank/resolve",
+            params={"account_number": account_number, "bank_code": bank_code},
+            headers={"Authorization": f"Bearer {settings.paystack_secret_key}"},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(
+            status_code=400, detail="Could not verify this account number with the bank"
+        )
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Could not reach Paystack to verify the account")
+    return response.json()["data"]
+
+
+def create_transfer_recipient(name: str, account_number: str, bank_code: str) -> dict:
+    if not settings.paystack_secret_key:
+        raise HTTPException(status_code=503, detail="Payments are not configured yet")
+
+    try:
+        response = httpx.post(
+            f"{PAYSTACK_BASE_URL}/transferrecipient",
+            json={
+                "type": "nuban",
+                "name": name,
+                "account_number": account_number,
+                "bank_code": bank_code,
+                "currency": "NGN",
+            },
+            headers={"Authorization": f"Bearer {settings.paystack_secret_key}"},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Could not register this withdrawal account")
+    return response.json()["data"]
+
+
+def initiate_transfer(amount_kobo: int, recipient_code: str, reference: str, reason: str) -> dict:
+    if not settings.paystack_secret_key:
+        raise HTTPException(status_code=503, detail="Payments are not configured yet")
+
+    response = httpx.post(
+        f"{PAYSTACK_BASE_URL}/transfer",
+        json={
+            "source": "balance",
+            "amount": amount_kobo,
+            "recipient": recipient_code,
+            "reference": reference,
+            "reason": reason,
+        },
+        headers={"Authorization": f"Bearer {settings.paystack_secret_key}"},
+        timeout=15,
+    )
+    response.raise_for_status()
+    return response.json()["data"]
+
+
 def verify_and_finalize(session: Session, reference: str) -> TicketOrder:
     order = session.exec(
         select(TicketOrder).where(TicketOrder.paystack_reference == reference)

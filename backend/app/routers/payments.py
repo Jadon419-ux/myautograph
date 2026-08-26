@@ -20,6 +20,7 @@ from app.services.marketplace import verify_and_finalize_marketplace_order
 from app.services.merchandise import order_to_read, verify_and_finalize_merchandise_order
 from app.services.paystack import verify_and_finalize
 from app.services.wallet import verify_and_finalize_wallet_funding
+from app.services.withdrawal import finalize_transfer_webhook
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -73,8 +74,13 @@ async def paystack_webhook(request: Request, session: Session = Depends(get_sess
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     payload = json.loads(body)
+    event = payload.get("event", "")
     reference = payload.get("data", {}).get("reference")
-    if reference:
+
+    if event.startswith("transfer."):
+        if reference:
+            finalize_transfer_webhook(session, reference, payload.get("data", {}).get("status", ""))
+    elif reference:
         try:
             _finalize_by_reference(session, reference)
         except HTTPException:

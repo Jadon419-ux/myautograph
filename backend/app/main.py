@@ -28,6 +28,7 @@ from app.routers import (
     tickets,
     transport,
     wallet,
+    withdrawals,
 )
 
 app = FastAPI(title="My Autograph API")
@@ -145,6 +146,7 @@ app.include_router(wallet.router)
 app.include_router(merchandise.router)
 app.include_router(star_auction.router)
 app.include_router(transport.router)
+app.include_router(withdrawals.router)
 
 
 @app.get("/health")
