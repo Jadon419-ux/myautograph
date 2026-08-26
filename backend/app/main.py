@@ -9,6 +9,7 @@ from app.config import settings
 from app.database import create_db_and_tables, engine
 from app.models.autograph import Autograph, AutographMedium, AutographRequest, AutographRequestType
 from app.models.celebrity import CelebrityProfile, VerificationStatus
+from app.models.concert import Concert
 from app.models.user import User
 from app.routers import (
     admin,
@@ -116,6 +117,15 @@ def on_startup():
             request.request_type = AutographRequestType.online
             session.add(request)
         if requests_needing_backfill:
+            session.commit()
+
+        concerts_needing_backfill = session.exec(
+            select(Concert).where(Concert.agent_commission_percent.is_(None))
+        ).all()
+        for concert in concerts_needing_backfill:
+            concert.agent_commission_percent = 0.0
+            session.add(concert)
+        if concerts_needing_backfill:
             session.commit()
 
 

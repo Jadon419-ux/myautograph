@@ -23,7 +23,6 @@ export default function ConcertDetail() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [markupPercent, setMarkupPercent] = useState(0);
 
   function loadAll() {
     client.get(`/concerts/${id}`).then(({ data }) => setConcert(data));
@@ -31,22 +30,12 @@ export default function ConcertDetail() {
       setCategories(data);
       if (data.length > 0) setSelectedCategoryId(String(data[0].id));
     });
-    if (referralCode) {
-      client
-        .get(`/tickets/referrals/code/${referralCode}`)
-        .then(({ data }) => setMarkupPercent(data.markup_percent))
-        .catch(() => setMarkupPercent(0));
-    }
   }
 
   useEffect(() => {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-
-  function displayPrice(priceKobo) {
-    return Math.round(priceKobo * (1 + markupPercent / 100));
-  }
 
   async function submitPurchase(e) {
     e.preventDefault();
@@ -98,10 +87,7 @@ export default function ConcertDetail() {
           </div>
         )}
         {referralCode && (
-          <p className="mt-3 text-xs text-gray-400">
-            Referral code applied: {referralCode}
-            {markupPercent > 0 && ` — a ${markupPercent}% referral fee is included in the prices below.`}
-          </p>
+          <p className="mt-3 text-xs text-gray-400">Referral code applied: {referralCode}</p>
         )}
       </div>
 
@@ -120,7 +106,7 @@ export default function ConcertDetail() {
                 <div>
                   <p className="font-medium text-brand-charcoal">{c.name}</p>
                   <p className="text-sm text-gray-500">
-                    {c.is_free ? "Free" : formatNaira(displayPrice(c.price_kobo))} · {remaining} remaining
+                    {c.is_free ? "Free" : formatNaira(c.price_kobo)} · {remaining} remaining
                   </p>
                 </div>
               </div>
@@ -142,7 +128,7 @@ export default function ConcertDetail() {
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} — {c.is_free ? "Free" : formatNaira(displayPrice(c.price_kobo))}
+                    {c.name} — {c.is_free ? "Free" : formatNaira(c.price_kobo)}
                   </option>
                 ))}
               </select>

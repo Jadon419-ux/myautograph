@@ -11,6 +11,7 @@ class ConcertCreate(BaseModel):
     event_date: datetime
     description: str = ""
     celebrity_id: int | None = None
+    agent_commission_percent: float = 0.0
 
 
 class ConcertRead(BaseModel):
@@ -20,4 +21,5 @@ class ConcertRead(BaseModel):
     venue: str
     event_date: datetime
     description: str
+    agent_commission_percent: float
     celebrities: list[CelebrityRead] = []

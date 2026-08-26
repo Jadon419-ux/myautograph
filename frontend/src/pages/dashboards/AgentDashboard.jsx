@@ -256,9 +256,9 @@ export default function AgentDashboard() {
         <section className="mt-10">
           <h2 className="text-lg font-semibold text-brand-charcoal">Ticket sales invites</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Managers can invite you to help sell tickets for their star's events. Buyers using your
-            link pay a 10% referral fee on top of the ticket price, and you automatically earn 4% of
-            the ticket price to your wallet on each sale.
+            Managers can invite you to help sell tickets for their star's events. Buyers pay the
+            listed ticket price — no markup. When you sell via your link, you automatically earn the
+            commission percentage the manager set for that event, deposited straight to your wallet.
           </p>
           <div className="mt-3 space-y-3">
             {myInvites

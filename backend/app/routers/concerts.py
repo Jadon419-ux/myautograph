@@ -9,8 +9,20 @@ from app.models.roster import ManagerRoster
 from app.models.user import RoleEnum, User
 from app.routers.celebrities import _to_read as _celebrity_to_read
 from app.schemas.concert import ConcertCreate, ConcertRead
+from app.services.paystack import PLATFORM_TICKET_FEE_PERCENT
 
 router = APIRouter(prefix="/concerts", tags=["concerts"])
+
+MAX_AGENT_COMMISSION_PERCENT = 100 - PLATFORM_TICKET_FEE_PERCENT
+
+
+def _validate_agent_commission_percent(percent: float) -> None:
+    if not (0 <= percent <= MAX_AGENT_COMMISSION_PERCENT):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Agent commission must be between 0 and {MAX_AGENT_COMMISSION_PERCENT:g}% "
+            f"(the platform keeps a fixed {PLATFORM_TICKET_FEE_PERCENT:g}%)",
+        )
 
 
 def _to_read(session: Session, concert: Concert) -> ConcertRead:
@@ -25,6 +37,7 @@ def _to_read(session: Session, concert: Concert) -> ConcertRead:
         venue=concert.venue,
         event_date=concert.event_date,
         description=concert.description,
+        agent_commission_percent=concert.agent_commission_percent,
         celebrities=[_celebrity_to_read(session, p) for p in profiles if p is not None],
     )
 
@@ -64,6 +77,8 @@ def create_concert(
     elif celebrity_id is not None and not session.get(CelebrityProfile, celebrity_id):
         raise HTTPException(status_code=404, detail="Celebrity not found")
 
+    _validate_agent_commission_percent(payload.agent_commission_percent)
+
     concert_data = payload.model_dump(exclude={"celebrity_id"})
     concert = Concert(agent_id=user.id, **concert_data)
     session.add(concert)
@@ -87,6 +102,8 @@ def update_concert(
     concert = session.get(Concert, concert_id)
     if not concert or concert.agent_id != user.id:
         raise HTTPException(status_code=404, detail="Concert not found")
+
+    _validate_agent_commission_percent(payload.agent_commission_percent)
 
     for key, value in payload.model_dump(exclude={"celebrity_id"}).items():
         setattr(concert, key, value)

@@ -10,6 +10,7 @@ class Concert(SQLModel, table=True):
     venue: str
     event_date: datetime
     description: str = ""
+    agent_commission_percent: float = 0.0
 
 
 class ConcertCelebrityLink(SQLModel, table=True):

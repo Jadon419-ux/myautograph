@@ -51,11 +51,6 @@ class AgentInviteCreate(BaseModel):
     email: str
 
 
-class ReferralPreviewRead(BaseModel):
-    invitee_role: RoleEnum
-    markup_percent: float
-
-
 class ReferralLinkRead(BaseModel):
     id: int
     concert_id: int

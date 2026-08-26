@@ -15,11 +15,11 @@ from app.models.wallet import WalletTransaction, WalletTransactionType
 
 PAYSTACK_BASE_URL = "https://api.paystack.co"
 
-# An agent-referred ticket sale costs the buyer 10% more; of that markup,
-# a fixed 4 percentage points (of the original price) goes to the referring
-# agent's wallet, and the remaining 6 stays with the platform.
-AGENT_REFERRAL_MARKUP_PERCENT = 10.0
-AGENT_REFERRAL_COMMISSION_PERCENT = 4.0
+# The platform always keeps a fixed cut of a referred ticket sale; the rest
+# of that cut (up to 100 - PLATFORM_TICKET_FEE_PERCENT) can be allocated by
+# the concert's owner to the referring agent via Concert.agent_commission_percent.
+# The buyer always pays the listed ticket price — no markup is added.
+PLATFORM_TICKET_FEE_PERCENT = 7.0
 
 
 def initialize_transaction(email: str, amount_kobo: int, reference: str) -> dict:
@@ -81,15 +81,14 @@ def verify_and_finalize(session: Session, reference: str) -> TicketOrder:
         if referral_link_id:
             link = session.get(ReferralLink, referral_link_id)
             if link and link.invitee_role == RoleEnum.agent and link.invitee_user_id:
+                concert = session.get(Concert, order.concert_id)
                 category = session.get(TicketCategory, order.ticket_category_id)
                 original_amount_kobo = (category.price_kobo * order.quantity) if category else 0
-                commission_kobo = round(
-                    original_amount_kobo * AGENT_REFERRAL_COMMISSION_PERCENT / 100
-                )
+                commission_percent = concert.agent_commission_percent if concert else 0.0
+                commission_kobo = round(original_amount_kobo * commission_percent / 100)
                 if commission_kobo > 0:
                     agent_user = session.get(User, link.invitee_user_id)
                     if agent_user:
-                        concert = session.get(Concert, order.concert_id)
                         agent_user.wallet_balance_kobo += commission_kobo
                         session.add(agent_user)
                         session.add(

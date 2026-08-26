@@ -29,6 +29,7 @@ export default function ManagerDashboard() {
     event_date: "",
     description: "",
     celebrity_id: "",
+    agent_commission_percent: "10",
   });
   const [ticketError, setTicketError] = useState("");
 
@@ -91,8 +92,16 @@ export default function ManagerDashboard() {
         event_date: toUtcIso(ticketForm.event_date),
         description: ticketForm.description,
         celebrity_id: Number(ticketForm.celebrity_id),
+        agent_commission_percent: Number(ticketForm.agent_commission_percent || 0),
       });
-      setTicketForm({ title: "", venue: "", event_date: "", description: "", celebrity_id: "" });
+      setTicketForm({
+        title: "",
+        venue: "",
+        event_date: "",
+        description: "",
+        celebrity_id: "",
+        agent_commission_percent: "10",
+      });
       loadConcerts();
     } catch (err) {
       setTicketError(err.response?.data?.detail || "Could not create ticket.");
@@ -316,6 +325,22 @@ export default function ManagerDashboard() {
               onChange={(e) => setTicketForm({ ...ticketForm, description: e.target.value })}
             />
           </div>
+          <div>
+            <label className="label">Agent commission % (of ticket price, on referred sales)</label>
+            <input
+              type="number"
+              min="0"
+              max="93"
+              step="0.1"
+              required
+              className="input-field"
+              value={ticketForm.agent_commission_percent}
+              onChange={(e) => setTicketForm({ ...ticketForm, agent_commission_percent: e.target.value })}
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              The platform keeps a fixed 7% of referred sales; this is what agents earn from the rest.
+            </p>
+          </div>
           <button type="submit" className="btn-primary">Create ticket</button>
         </form>
       </section>
@@ -328,6 +353,9 @@ export default function ManagerDashboard() {
               <h3 className="font-semibold text-brand-charcoal">{c.title}</h3>
               <p className="text-sm text-gray-500">
                 {c.venue} · {new Date(c.event_date).toLocaleString()}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                Agent commission: {c.agent_commission_percent}%
               </p>
               {c.celebrities.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -442,8 +470,9 @@ export default function ManagerDashboard() {
           <div className="card mt-4">
             <h3 className="font-semibold text-brand-charcoal">Invite an agent to sell tickets</h3>
             <p className="mt-1 text-sm text-gray-500">
-              Buyers using an agent's link pay a 10% referral fee on top of the ticket price. The
-              agent automatically earns 4% of the ticket price to their wallet on each sale.
+              Buyers pay the listed ticket price — no markup. When an agent sells via their link,
+              they automatically earn {selectedConcert?.agent_commission_percent ?? 0}% of the
+              ticket price to their wallet; the platform keeps a fixed 7%.
             </p>
             <div className="mt-2 space-y-2">
               {referrals.map((r) => (
