@@ -99,22 +99,26 @@ def create_transfer_recipient(name: str, account_number: str, bank_code: str) ->
     if not settings.paystack_secret_key:
         raise HTTPException(status_code=503, detail="Payments are not configured yet")
 
+    response = httpx.post(
+        f"{PAYSTACK_BASE_URL}/transferrecipient",
+        json={
+            "type": "nuban",
+            "name": name,
+            "account_number": account_number,
+            "bank_code": bank_code,
+            "currency": "NGN",
+        },
+        headers={"Authorization": f"Bearer {settings.paystack_secret_key}"},
+        timeout=10,
+    )
     try:
-        response = httpx.post(
-            f"{PAYSTACK_BASE_URL}/transferrecipient",
-            json={
-                "type": "nuban",
-                "name": name,
-                "account_number": account_number,
-                "bank_code": bank_code,
-                "currency": "NGN",
-            },
-            headers={"Authorization": f"Bearer {settings.paystack_secret_key}"},
-            timeout=10,
-        )
         response.raise_for_status()
-    except httpx.HTTPError:
-        raise HTTPException(status_code=502, detail="Could not register this withdrawal account")
+    except httpx.HTTPStatusError:
+        try:
+            message = response.json().get("message", "Could not register this withdrawal account")
+        except ValueError:
+            message = "Could not register this withdrawal account"
+        raise HTTPException(status_code=400, detail=message)
     return response.json()["data"]
 
 
@@ -134,7 +138,14 @@ def initiate_transfer(amount_kobo: int, recipient_code: str, reference: str, rea
         headers={"Authorization": f"Bearer {settings.paystack_secret_key}"},
         timeout=15,
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        try:
+            message = response.json().get("message", "Transfer could not be initiated")
+        except ValueError:
+            message = "Transfer could not be initiated"
+        raise HTTPException(status_code=400, detail=message)
     return response.json()["data"]
 
 
