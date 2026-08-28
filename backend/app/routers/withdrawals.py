@@ -28,7 +28,7 @@ from app.services.withdrawal import names_correlate
 router = APIRouter(prefix="/withdrawals", tags=["withdrawals"])
 
 WITHDRAWAL_ROLES = (RoleEnum.agent, RoleEnum.manager)
-MIN_WITHDRAWAL_KOBO = 100000
+MIN_WITHDRAWAL_KOBO = 50000
 
 
 def _reverse_withdrawal(session: Session, user: User, withdrawal: WalletWithdrawal, reason: str) -> None:
@@ -113,7 +113,7 @@ def request_withdrawal(
     user: User = Depends(require_role(*WITHDRAWAL_ROLES)),
 ):
     if payload.amount_kobo < MIN_WITHDRAWAL_KOBO:
-        raise HTTPException(status_code=400, detail="Minimum withdrawal amount is ₦1,000")
+        raise HTTPException(status_code=400, detail="Minimum withdrawal amount is ₦500")
 
     available_kobo = user.wallet_balance_kobo - user.wallet_held_kobo
     if payload.amount_kobo > available_kobo:

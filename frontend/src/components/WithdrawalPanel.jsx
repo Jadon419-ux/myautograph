@@ -157,7 +157,7 @@ export default function WithdrawalPanel() {
         <form onSubmit={requestWithdrawal} className="mt-2 flex gap-2">
           <input
             type="number"
-            min="1000"
+            min="500"
             step="0.01"
             required
             placeholder="Amount (₦)"
