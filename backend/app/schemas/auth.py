@@ -31,6 +31,10 @@ class AvatarUpdate(BaseModel):
     avatar_url: str
 
 
+class ProfileUpdate(BaseModel):
+    full_name: str
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"

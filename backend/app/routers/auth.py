@@ -13,6 +13,7 @@ from app.models.user import User, RoleEnum
 from app.schemas.auth import (
     AvatarUpdate,
     ForgotPasswordRequest,
+    ProfileUpdate,
     ResetPasswordRequest,
     Token,
     UserCreate,
@@ -132,6 +133,21 @@ def update_avatar(
     user: User = Depends(get_current_user),
 ):
     user.avatar_url = payload.avatar_url
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+@router.patch("/me", response_model=UserRead)
+def update_profile(
+    payload: ProfileUpdate,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    if not payload.full_name or not payload.full_name.strip():
+        raise HTTPException(status_code=400, detail="Full name is required")
+    user.full_name = payload.full_name.strip()
     session.add(user)
     session.commit()
     session.refresh(user)
