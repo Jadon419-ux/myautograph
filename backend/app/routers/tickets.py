@@ -341,6 +341,9 @@ def create_order(
         session.commit()
         session.refresh(order)
         create_tickets_for_order(session, order)
+        # create_tickets_for_order() commits internally, which expires this
+        # order's attributes - refresh again before reading them below.
+        session.refresh(order)
     else:
         try:
             data = initialize_transaction(user.email, amount_kobo, order.paystack_reference)
