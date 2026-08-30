@@ -32,11 +32,9 @@ function verifyUrl(qrToken) {
   return `${window.location.origin}/tickets/verify/${qrToken}`;
 }
 
-export default function TicketCard({ ticket }) {
-  const banner = STATUS_BANNER[ticket.status] || STATUS_BANNER.valid;
-
+function TicketStub({ ticket, banner }) {
   return (
-    <div className="mx-auto w-full max-w-xs overflow-hidden rounded-2xl border border-brand-border bg-white shadow-sm">
+    <div className="w-full shrink-0 sm:w-72">
       <div className="flex items-center justify-center gap-3 py-5">
         <img src={iconMark} alt="My Autograph" className="h-14 w-14 rounded-lg object-cover" />
         <span className="text-2xl font-semibold leading-tight text-brand-charcoal">
@@ -93,6 +91,33 @@ export default function TicketCard({ ticket }) {
       <div className="mt-4 bg-brand-green py-2 text-center text-xs font-medium text-white">
         🌐 myautographma.com
       </div>
+    </div>
+  );
+}
+
+export default function TicketCard({ ticket }) {
+  const banner = STATUS_BANNER[ticket.status] || STATUS_BANNER.valid;
+  const hasFlyer = Boolean(ticket.concert_flyer_url);
+
+  if (!hasFlyer) {
+    return (
+      <div className="mx-auto w-full max-w-xs overflow-hidden rounded-2xl border border-brand-border bg-white shadow-sm">
+        <TicketStub ticket={ticket} banner={banner} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-brand-border bg-white shadow-sm sm:flex-row">
+      <div className="min-h-[220px] flex-1 bg-brand-gray">
+        <img
+          src={ticket.concert_flyer_url}
+          alt={ticket.concert_title || "Event flyer"}
+          className="h-full w-full object-cover"
+        />
+      </div>
+      <div className="border-t-2 border-dashed border-brand-border sm:border-l-2 sm:border-t-0" />
+      <TicketStub ticket={ticket} banner={banner} />
     </div>
   );
 }

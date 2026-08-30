@@ -11,6 +11,7 @@ class Concert(SQLModel, table=True):
     event_date: datetime
     description: str = ""
     agent_commission_percent: float = 0.0
+    flyer_url: str | None = None
 
 
 class ConcertCelebrityLink(SQLModel, table=True):

@@ -105,6 +105,7 @@ class TicketRead(BaseModel):
     event_date: datetime
     category_name: str
     holder_avatar_url: str | None = None
+    concert_flyer_url: str | None = None
 
 
 class TicketVerifyRead(BaseModel):
@@ -118,6 +119,7 @@ class TicketVerifyRead(BaseModel):
     category_name: str
     status: TicketStatus
     checked_in_at: datetime | None
+    concert_flyer_url: str | None = None
 
 
 class SellerBreakdown(BaseModel):

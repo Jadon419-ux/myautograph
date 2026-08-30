@@ -5,6 +5,7 @@ import PasswordField from "../../components/PasswordField.jsx";
 import QrScanner from "../../components/QrScanner.jsx";
 import WithdrawalPanel from "../../components/WithdrawalPanel.jsx";
 import { toUtcIso } from "../../utils/datetime.js";
+import { CLOUDINARY_CONFIGURED, uploadImage } from "../../lib/cloudinary.js";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -31,8 +32,10 @@ export default function ManagerDashboard() {
     description: "",
     celebrity_id: "",
     agent_commission_percent: "10",
+    flyer_url: "",
   });
   const [ticketError, setTicketError] = useState("");
+  const [flyerUploading, setFlyerUploading] = useState(false);
 
   const [selectedConcertId, setSelectedConcertId] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -83,6 +86,22 @@ export default function ManagerDashboard() {
     }
   }
 
+  async function handleFlyerChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setTicketError("");
+    setFlyerUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setTicketForm((f) => ({ ...f, flyer_url: url }));
+    } catch (err) {
+      setTicketError(err.message || "Could not upload flyer.");
+    } finally {
+      setFlyerUploading(false);
+      e.target.value = "";
+    }
+  }
+
   async function createTicket(e) {
     e.preventDefault();
     setTicketError("");
@@ -94,6 +113,7 @@ export default function ManagerDashboard() {
         description: ticketForm.description,
         celebrity_id: Number(ticketForm.celebrity_id),
         agent_commission_percent: Number(ticketForm.agent_commission_percent || 0),
+        flyer_url: ticketForm.flyer_url || null,
       });
       setTicketForm({
         title: "",
@@ -102,6 +122,7 @@ export default function ManagerDashboard() {
         description: "",
         celebrity_id: "",
         agent_commission_percent: "10",
+        flyer_url: "",
       });
       loadConcerts();
     } catch (err) {
@@ -354,6 +375,33 @@ export default function ManagerDashboard() {
             />
             <p className="mt-1 text-xs text-gray-500">
               The platform keeps a fixed 7% of referred sales; this is what agents earn from the rest.
+            </p>
+          </div>
+          <div>
+            <label className="label">Event flyer</label>
+            {ticketForm.flyer_url && (
+              <img
+                src={ticketForm.flyer_url}
+                alt="Flyer preview"
+                className="mb-2 h-32 w-full rounded-md object-cover"
+              />
+            )}
+            {CLOUDINARY_CONFIGURED ? (
+              <label className="btn-secondary inline-block cursor-pointer">
+                {flyerUploading ? "Uploading..." : ticketForm.flyer_url ? "Change flyer" : "Upload flyer"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFlyerChange}
+                  disabled={flyerUploading}
+                />
+              </label>
+            ) : (
+              <p className="text-xs text-gray-400">Flyer uploads aren't configured yet.</p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Attached to every ticket for this event, next to the QR code, like a real event ticket stub.
             </p>
           </div>
           <button type="submit" className="btn-primary">Create ticket</button>

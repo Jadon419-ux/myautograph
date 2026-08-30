@@ -5,6 +5,7 @@ import QrScanner from "../../components/QrScanner.jsx";
 import ShareProfileLink from "../../components/ShareProfileLink.jsx";
 import WithdrawalPanel from "../../components/WithdrawalPanel.jsx";
 import { toUtcIso } from "../../utils/datetime.js";
+import { CLOUDINARY_CONFIGURED, uploadImage } from "../../lib/cloudinary.js";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -14,9 +15,10 @@ export default function AgentDashboard() {
   const { user } = useAuth();
   const [concerts, setConcerts] = useState([]);
   const [celebrities, setCelebrities] = useState([]);
-  const [form, setForm] = useState({ title: "", venue: "", event_date: "", description: "" });
+  const [form, setForm] = useState({ title: "", venue: "", event_date: "", description: "", flyer_url: "" });
   const [linkSelections, setLinkSelections] = useState({});
   const [error, setError] = useState("");
+  const [flyerUploading, setFlyerUploading] = useState(false);
 
   const [selectedConcertId, setSelectedConcertId] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -61,12 +63,32 @@ export default function AgentDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  async function handleFlyerChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setError("");
+    setFlyerUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setForm((f) => ({ ...f, flyer_url: url }));
+    } catch (err) {
+      setError(err.message || "Could not upload flyer.");
+    } finally {
+      setFlyerUploading(false);
+      e.target.value = "";
+    }
+  }
+
   async function createConcert(e) {
     e.preventDefault();
     setError("");
     try {
-      await client.post("/concerts", { ...form, event_date: toUtcIso(form.event_date) });
-      setForm({ title: "", venue: "", event_date: "", description: "" });
+      await client.post("/concerts", {
+        ...form,
+        event_date: toUtcIso(form.event_date),
+        flyer_url: form.flyer_url || null,
+      });
+      setForm({ title: "", venue: "", event_date: "", description: "", flyer_url: "" });
       loadAll();
     } catch (err) {
       setError(err.response?.data?.detail || "Could not create concert.");
@@ -212,6 +234,33 @@ export default function AgentDashboard() {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
+          </div>
+          <div>
+            <label className="label">Event flyer</label>
+            {form.flyer_url && (
+              <img
+                src={form.flyer_url}
+                alt="Flyer preview"
+                className="mb-2 h-32 w-full rounded-md object-cover"
+              />
+            )}
+            {CLOUDINARY_CONFIGURED ? (
+              <label className="btn-secondary inline-block cursor-pointer">
+                {flyerUploading ? "Uploading..." : form.flyer_url ? "Change flyer" : "Upload flyer"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFlyerChange}
+                  disabled={flyerUploading}
+                />
+              </label>
+            ) : (
+              <p className="text-xs text-gray-400">Flyer uploads aren't configured yet.</p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Attached to every ticket for this event, next to the QR code, like a real event ticket stub.
+            </p>
           </div>
           <button type="submit" className="btn-primary">Create concert</button>
         </form>

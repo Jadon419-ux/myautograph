@@ -38,6 +38,7 @@ def _to_read(session: Session, concert: Concert) -> ConcertRead:
         event_date=concert.event_date,
         description=concert.description,
         agent_commission_percent=concert.agent_commission_percent,
+        flyer_url=concert.flyer_url,
         celebrities=[_celebrity_to_read(session, p) for p in profiles if p is not None],
     )
 

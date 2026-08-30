@@ -71,6 +71,7 @@ def _build_ticket_read(session: Session, ticket: Ticket) -> TicketRead:
         event_date=concert.event_date if concert else ticket.created_at,
         category_name=category.name if category else "",
         holder_avatar_url=buyer.avatar_url if buyer else None,
+        concert_flyer_url=concert.flyer_url if concert else None,
     )
 
 
@@ -401,6 +402,7 @@ def verify_ticket_public(qr_token: str, session: Session = Depends(get_session))
         category_name=category.name if category else "",
         status=ticket.status,
         checked_in_at=ticket.checked_in_at,
+        concert_flyer_url=concert.flyer_url if concert else None,
     )
 
 
