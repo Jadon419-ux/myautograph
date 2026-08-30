@@ -37,9 +37,9 @@ export default function TicketCard({ ticket }) {
 
   return (
     <div className="mx-auto w-full max-w-xs overflow-hidden rounded-2xl border border-brand-border bg-white shadow-sm">
-      <div className="flex items-center justify-center gap-2 py-4">
-        <img src={iconMark} alt="My Autograph" className="h-8 w-8 rounded object-cover" />
-        <span className="text-base font-semibold text-brand-charcoal">
+      <div className="flex items-center justify-center gap-3 py-5">
+        <img src={iconMark} alt="My Autograph" className="h-14 w-14 rounded-lg object-cover" />
+        <span className="text-2xl font-semibold leading-tight text-brand-charcoal">
           My <span className="font-bold">Autograph</span>
         </span>
       </div>
