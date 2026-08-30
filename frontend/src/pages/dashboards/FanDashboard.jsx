@@ -1,14 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { QRCodeSVG } from "qrcode.react";
 import client from "../../api/client.js";
-
-const TICKET_STATUS_STYLES = {
-  pending_payment: "bg-yellow-100 text-yellow-800",
-  valid: "bg-brand-greenLight text-brand-greenDark",
-  checked_in: "bg-blue-100 text-blue-700",
-  cancelled: "bg-red-100 text-red-700",
-};
+import TicketCard from "../../components/TicketCard.jsx";
 
 const STATUS_STYLES = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -522,19 +515,9 @@ export default function FanDashboard() {
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold text-brand-charcoal">My ticket vault</h2>
-        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
           {tickets.map((t) => (
-            <div key={t.id} className="card flex items-center gap-4">
-              <QRCodeSVG value={t.qr_token} size={80} />
-              <div>
-                <p className="font-medium text-brand-charcoal">{t.recipient_name || "You"}</p>
-                <span
-                  className={`mt-1 inline-block rounded-full px-3 py-1 text-xs font-medium ${TICKET_STATUS_STYLES[t.status]}`}
-                >
-                  {t.status.replace("_", " ")}
-                </span>
-              </div>
-            </div>
+            <TicketCard key={t.id} ticket={t} />
           ))}
           {tickets.length === 0 && <p className="text-sm text-gray-500">No tickets yet.</p>}
         </div>

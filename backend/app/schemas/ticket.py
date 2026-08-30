@@ -98,6 +98,26 @@ class TicketRead(BaseModel):
     status: TicketStatus
     checked_in_at: datetime | None
     created_at: datetime
+    ma_unique_id: str
+    ticket_number: str
+    concert_title: str
+    venue: str
+    event_date: datetime
+    category_name: str
+    holder_avatar_url: str | None = None
+
+
+class TicketVerifyRead(BaseModel):
+    ticket_number: str
+    ma_unique_id: str
+    holder_name: str
+    holder_avatar_url: str | None = None
+    concert_title: str
+    venue: str
+    event_date: datetime
+    category_name: str
+    status: TicketStatus
+    checked_in_at: datetime | None
 
 
 class SellerBreakdown(BaseModel):

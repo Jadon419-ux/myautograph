@@ -12,6 +12,7 @@ import Concerts from "./pages/Concerts.jsx";
 import ConcertDetail from "./pages/ConcertDetail.jsx";
 import PaystackCallback from "./pages/PaystackCallback.jsx";
 import VerifyAutograph from "./pages/VerifyAutograph.jsx";
+import TicketVerify from "./pages/TicketVerify.jsx";
 import Marketplace from "./pages/Marketplace.jsx";
 import ListingDetail from "./pages/ListingDetail.jsx";
 import Merch from "./pages/Merch.jsx";
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/concerts/:id" element={<ConcertDetail />} />
           <Route path="/payments/callback" element={<PaystackCallback />} />
           <Route path="/verify" element={<VerifyAutograph />} />
+          <Route path="/tickets/verify/:token" element={<TicketVerify />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/marketplace/:id" element={<ListingDetail />} />
           <Route path="/merch" element={<Merch />} />

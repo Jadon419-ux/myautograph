@@ -159,10 +159,17 @@ export default function ManagerDashboard() {
     }
   }
 
-  async function handleScan(token) {
+  function extractTicketToken(raw) {
+    const trimmed = (raw || "").trim();
+    const match = trimmed.match(/\/tickets\/verify\/([^/?#]+)/);
+    return match ? match[1] : trimmed;
+  }
+
+  async function handleScan(rawToken) {
     setCheckinError("");
     setCheckinResult(null);
     try {
+      const token = extractTicketToken(rawToken);
       const { data } = await client.post(`/tickets/checkin/${token}`);
       setCheckinResult(data);
     } catch (err) {
@@ -529,9 +536,24 @@ export default function ManagerDashboard() {
             <h3 className="font-semibold text-brand-charcoal">Check-in</h3>
             {checkinError && <p className="mt-2 text-sm text-red-600">{checkinError}</p>}
             {checkinResult && (
-              <p className="mt-2 text-sm text-brand-greenDark">
-                Checked in: {checkinResult.recipient_name || "Guest"} ({checkinResult.status})
-              </p>
+              <div className="mt-2 flex items-center gap-3 rounded-md border border-brand-border p-3">
+                {checkinResult.holder_avatar_url && (
+                  <img
+                    src={checkinResult.holder_avatar_url}
+                    alt=""
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                )}
+                <div className="text-sm">
+                  <p className="font-medium text-brand-charcoal">
+                    Checked in: {checkinResult.recipient_name || "Guest"} ({checkinResult.status})
+                  </p>
+                  <p className="text-gray-500">
+                    {checkinResult.ticket_number} · {checkinResult.category_name} ·{" "}
+                    {checkinResult.concert_title}
+                  </p>
+                </div>
+              </div>
             )}
 
             <button className="btn-secondary mt-3" onClick={() => setShowScanner((s) => !s)}>

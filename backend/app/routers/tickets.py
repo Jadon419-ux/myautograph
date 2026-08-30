@@ -27,6 +27,7 @@ from app.schemas.ticket import (
     TicketOrderCreate,
     TicketOrderRead,
     TicketRead,
+    TicketVerifyRead,
 )
 from app.services.paystack import initialize_transaction
 
@@ -46,6 +47,30 @@ def _get_owned_category(session: Session, category_id: int, user: User) -> Ticke
         raise HTTPException(status_code=404, detail="Ticket category not found")
     _get_owned_concert(session, category.concert_id, user)
     return category
+
+
+def _ma_unique_id(user_id: int) -> str:
+    return f"MA-{user_id:08d}"
+
+
+def _ticket_number(ticket_id: int) -> str:
+    return f"MA-TKT-{ticket_id:06d}"
+
+
+def _build_ticket_read(session: Session, ticket: Ticket) -> TicketRead:
+    concert = session.get(Concert, ticket.concert_id)
+    category = session.get(TicketCategory, ticket.ticket_category_id)
+    buyer = session.get(User, ticket.buyer_user_id)
+    return TicketRead(
+        **ticket.model_dump(),
+        ma_unique_id=_ma_unique_id(ticket.buyer_user_id),
+        ticket_number=_ticket_number(ticket.id),
+        concert_title=concert.title if concert else "",
+        venue=concert.venue if concert else "",
+        event_date=concert.event_date if concert else ticket.created_at,
+        category_name=category.name if category else "",
+        holder_avatar_url=buyer.avatar_url if buyer else None,
+    )
 
 
 # ---- Ticket categories ----
@@ -360,7 +385,37 @@ def list_my_tickets(
     session: Session = Depends(get_session),
     user: User = Depends(require_role(RoleEnum.fan, RoleEnum.admin)),
 ):
-    return session.exec(select(Ticket).where(Ticket.buyer_user_id == user.id)).all()
+    tickets = session.exec(select(Ticket).where(Ticket.buyer_user_id == user.id)).all()
+    return [_build_ticket_read(session, ticket) for ticket in tickets]
+
+
+# ---- Public verification ----
+# Anyone scanning a ticket's QR code lands here, no login required. Only
+# non-sensitive display fields are exposed - never wallet/financial data.
+
+
+@router.get("/verify/{qr_token}", response_model=TicketVerifyRead)
+def verify_ticket_public(qr_token: str, session: Session = Depends(get_session)):
+    ticket = session.exec(select(Ticket).where(Ticket.qr_token == qr_token)).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    concert = session.get(Concert, ticket.concert_id)
+    category = session.get(TicketCategory, ticket.ticket_category_id)
+    buyer = session.get(User, ticket.buyer_user_id)
+
+    return TicketVerifyRead(
+        ticket_number=_ticket_number(ticket.id),
+        ma_unique_id=_ma_unique_id(ticket.buyer_user_id),
+        holder_name=ticket.recipient_name or (buyer.full_name if buyer else "Guest"),
+        holder_avatar_url=buyer.avatar_url if buyer else None,
+        concert_title=concert.title if concert else "",
+        venue=concert.venue if concert else "",
+        event_date=concert.event_date if concert else ticket.created_at,
+        category_name=category.name if category else "",
+        status=ticket.status,
+        checked_in_at=ticket.checked_in_at,
+    )
 
 
 # ---- Check-in ----
@@ -380,7 +435,8 @@ def preview_ticket(
     session: Session = Depends(get_session),
     user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
-    return _get_ticket_for_organizer(session, qr_token, user)
+    ticket = _get_ticket_for_organizer(session, qr_token, user)
+    return _build_ticket_read(session, ticket)
 
 
 @router.post("/checkin/{qr_token}", response_model=TicketRead)
@@ -400,7 +456,7 @@ def check_in_ticket(
     session.add(ticket)
     session.commit()
     session.refresh(ticket)
-    return ticket
+    return _build_ticket_read(session, ticket)
 
 
 # ---- Analytics ----
