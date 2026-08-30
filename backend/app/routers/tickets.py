@@ -30,6 +30,7 @@ from app.schemas.ticket import (
     TicketVerifyRead,
 )
 from app.services.paystack import initialize_transaction
+from app.services.tickets import create_tickets_for_order
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -268,12 +269,9 @@ def decline_referral(
 # ---- Orders / purchase ----
 
 
-def _release_reservation(session: Session, order: TicketOrder, tickets: list[Ticket]) -> None:
+def _release_reservation(session: Session, order: TicketOrder) -> None:
     order.status = TicketOrderStatus.failed
     session.add(order)
-    for ticket in tickets:
-        ticket.status = TicketStatus.cancelled
-        session.add(ticket)
     category = session.get(TicketCategory, order.ticket_category_id)
     if category:
         category.quantity_sold = max(0, category.quantity_sold - order.quantity)
@@ -323,46 +321,34 @@ def create_order(
         quantity=payload.quantity,
         paystack_reference=uuid.uuid4().hex,
         amount_kobo=amount_kobo,
+        recipient_name=payload.recipient_name or user.full_name,
+        recipient_email=payload.recipient_email or user.email,
+        referral_link_id=referral_link_id,
     )
     session.add(order)
     session.commit()
     session.refresh(order)
 
-    tickets = [
-        Ticket(
-            ticket_category_id=category.id,
-            concert_id=category.concert_id,
-            order_id=order.id,
-            buyer_user_id=user.id,
-            recipient_name=payload.recipient_name or user.full_name,
-            recipient_email=payload.recipient_email or user.email,
-            referral_link_id=referral_link_id,
-            qr_token=uuid.uuid4().hex,
-        )
-        for _ in range(payload.quantity)
-    ]
-    session.add_all(tickets)
-    session.commit()
-
+    # Tickets (and their QR codes) are only created once a payment actually
+    # succeeds - a failed or abandoned checkout never produces a ticket, so
+    # the buyer's ticket vault never fills up with unusable entries.
     authorization_url = None
     if is_free:
         order.status = TicketOrderStatus.paid
         order.paid_at = datetime.utcnow()
         session.add(order)
-        for ticket in tickets:
-            ticket.status = TicketStatus.valid
-            session.add(ticket)
         session.commit()
         session.refresh(order)
+        create_tickets_for_order(session, order)
     else:
         try:
             data = initialize_transaction(user.email, amount_kobo, order.paystack_reference)
             authorization_url = data.get("authorization_url")
         except HTTPException:
-            _release_reservation(session, order, tickets)
+            _release_reservation(session, order)
             raise
         except httpx.HTTPError:
-            _release_reservation(session, order, tickets)
+            _release_reservation(session, order)
             raise HTTPException(status_code=502, detail="Could not initialize payment. Please try again.")
 
     return TicketOrderRead(**order.model_dump(), authorization_url=authorization_url)

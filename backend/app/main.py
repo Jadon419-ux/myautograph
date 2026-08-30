@@ -10,6 +10,7 @@ from app.database import create_db_and_tables, engine
 from app.models.autograph import Autograph, AutographMedium, AutographRequest, AutographRequestType
 from app.models.celebrity import CelebrityProfile, VerificationStatus
 from app.models.concert import Concert
+from app.models.ticket_order import TicketOrder
 from app.models.user import User
 from app.routers import (
     admin,
@@ -127,6 +128,20 @@ def on_startup():
             concert.agent_commission_percent = 0.0
             session.add(concert)
         if concerts_needing_backfill:
+            session.commit()
+
+        orders_needing_backfill = session.exec(
+            select(TicketOrder).where(
+                TicketOrder.recipient_name.is_(None) | TicketOrder.recipient_email.is_(None)
+            )
+        ).all()
+        for order in orders_needing_backfill:
+            if order.recipient_name is None:
+                order.recipient_name = ""
+            if order.recipient_email is None:
+                order.recipient_email = ""
+            session.add(order)
+        if orders_needing_backfill:
             session.commit()
 
 

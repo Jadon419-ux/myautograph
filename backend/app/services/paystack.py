@@ -7,11 +7,11 @@ from sqlmodel import Session, select
 from app.config import settings
 from app.models.concert import Concert
 from app.models.referral import ReferralLink
-from app.models.ticket import Ticket, TicketStatus
 from app.models.ticket_category import TicketCategory
 from app.models.ticket_order import TicketOrder, TicketOrderStatus
 from app.models.user import RoleEnum, User
 from app.models.wallet import WalletTransaction, WalletTransactionType
+from app.services.tickets import create_tickets_for_order
 
 PAYSTACK_BASE_URL = "https://api.paystack.co"
 
@@ -160,18 +160,21 @@ def verify_and_finalize(session: Session, reference: str) -> TicketOrder:
         return order
 
     data = verify_transaction(reference)
-    tickets = session.exec(select(Ticket).where(Ticket.order_id == order.id)).all()
 
     if data.get("status") == "success" and data.get("amount") == order.amount_kobo:
         order.status = TicketOrderStatus.paid
         order.paid_at = datetime.utcnow()
-        for ticket in tickets:
-            ticket.status = TicketStatus.valid
-            session.add(ticket)
+        session.add(order)
+        session.commit()
+        session.refresh(order)
 
-        referral_link_id = next((t.referral_link_id for t in tickets if t.referral_link_id), None)
-        if referral_link_id:
-            link = session.get(ReferralLink, referral_link_id)
+        # Tickets (and their QR codes) are only ever created for a
+        # successful payment - a failed/abandoned checkout never produces
+        # a ticket, so the buyer's ticket vault never gets cluttered.
+        create_tickets_for_order(session, order)
+
+        if order.referral_link_id:
+            link = session.get(ReferralLink, order.referral_link_id)
             if link and link.invitee_role == RoleEnum.agent and link.invitee_user_id:
                 concert = session.get(Concert, order.concert_id)
                 category = session.get(TicketCategory, order.ticket_category_id)
@@ -193,9 +196,6 @@ def verify_and_finalize(session: Session, reference: str) -> TicketOrder:
                         )
     else:
         order.status = TicketOrderStatus.failed
-        for ticket in tickets:
-            ticket.status = TicketStatus.cancelled
-            session.add(ticket)
         category = session.get(TicketCategory, order.ticket_category_id)
         if category:
             category.quantity_sold = max(0, category.quantity_sold - order.quantity)

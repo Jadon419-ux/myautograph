@@ -21,3 +21,6 @@ class TicketOrder(SQLModel, table=True):
     status: TicketOrderStatus = TicketOrderStatus.pending
     created_at: datetime = Field(default_factory=datetime.utcnow)
     paid_at: datetime | None = None
+    recipient_name: str = ""
+    recipient_email: str = ""
+    referral_link_id: int | None = Field(default=None, foreign_key="referrallink.id")
