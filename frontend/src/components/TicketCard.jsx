@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import iconMark from "../assets/icon-mark.png";
 
@@ -98,26 +99,72 @@ function TicketStub({ ticket, banner }) {
 export default function TicketCard({ ticket }) {
   const banner = STATUS_BANNER[ticket.status] || STATUS_BANNER.valid;
   const hasFlyer = Boolean(ticket.concert_flyer_url);
+  const cardRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
 
-  if (!hasFlyer) {
-    return (
-      <div className="mx-auto w-full max-w-xs overflow-hidden rounded-2xl border border-brand-border bg-white shadow-sm">
-        <TicketStub ticket={ticket} banner={banner} />
-      </div>
-    );
+  async function downloadPdf() {
+    if (!cardRef.current) return;
+    setDownloadError("");
+    setDownloading(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: canvas.width >= canvas.height ? "landscape" : "portrait",
+        unit: "px",
+        format: [canvas.width, canvas.height],
+      });
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+      pdf.save(`my-autograph-ticket-${ticket.ticket_number || ticket.qr_token}.pdf`);
+    } catch (err) {
+      setDownloadError("Could not generate PDF. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-brand-border bg-white shadow-sm sm:flex-row">
-      <div className="min-h-[220px] flex-1 bg-brand-gray">
-        <img
-          src={ticket.concert_flyer_url}
-          alt={ticket.concert_title || "Event flyer"}
-          className="h-full w-full object-cover"
-        />
+    <div className={`mx-auto w-full ${hasFlyer ? "max-w-2xl" : "max-w-xs"}`}>
+      <div
+        ref={cardRef}
+        className={`flex w-full overflow-hidden rounded-2xl border border-brand-border bg-white shadow-sm ${
+          hasFlyer ? "flex-col sm:flex-row" : "flex-col"
+        }`}
+      >
+        {hasFlyer && (
+          <>
+            <div className="min-h-[220px] flex-1 bg-brand-gray">
+              <img
+                src={ticket.concert_flyer_url}
+                alt={ticket.concert_title || "Event flyer"}
+                crossOrigin="anonymous"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="border-t-2 border-dashed border-brand-border sm:border-l-2 sm:border-t-0" />
+          </>
+        )}
+        <TicketStub ticket={ticket} banner={banner} />
       </div>
-      <div className="border-t-2 border-dashed border-brand-border sm:border-l-2 sm:border-t-0" />
-      <TicketStub ticket={ticket} banner={banner} />
+
+      <button
+        type="button"
+        onClick={downloadPdf}
+        disabled={downloading}
+        className="btn-secondary mt-3 w-full"
+      >
+        {downloading ? "Preparing PDF..." : "Download as PDF"}
+      </button>
+      {downloadError && <p className="mt-1 text-center text-xs text-red-600">{downloadError}</p>}
     </div>
   );
 }
