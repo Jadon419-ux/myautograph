@@ -30,6 +30,7 @@ from app.schemas.ticket import (
     TicketVerifyRead,
 )
 from app.services.paystack import initialize_transaction
+from app.services.ticket_ids import ma_unique_id, ticket_number
 from app.services.tickets import create_tickets_for_order
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -50,22 +51,14 @@ def _get_owned_category(session: Session, category_id: int, user: User) -> Ticke
     return category
 
 
-def _ma_unique_id(user_id: int) -> str:
-    return f"MA-{user_id:08d}"
-
-
-def _ticket_number(ticket_id: int) -> str:
-    return f"MA-TKT-{ticket_id:06d}"
-
-
 def _build_ticket_read(session: Session, ticket: Ticket) -> TicketRead:
     concert = session.get(Concert, ticket.concert_id)
     category = session.get(TicketCategory, ticket.ticket_category_id)
     buyer = session.get(User, ticket.buyer_user_id)
     return TicketRead(
         **ticket.model_dump(),
-        ma_unique_id=_ma_unique_id(ticket.buyer_user_id),
-        ticket_number=_ticket_number(ticket.id),
+        ma_unique_id=ma_unique_id(ticket.buyer_user_id),
+        ticket_number=ticket_number(ticket.id),
         concert_title=concert.title if concert else "",
         venue=concert.venue if concert else "",
         event_date=concert.event_date if concert else ticket.created_at,
@@ -395,8 +388,8 @@ def verify_ticket_public(qr_token: str, session: Session = Depends(get_session))
     buyer = session.get(User, ticket.buyer_user_id)
 
     return TicketVerifyRead(
-        ticket_number=_ticket_number(ticket.id),
-        ma_unique_id=_ma_unique_id(ticket.buyer_user_id),
+        ticket_number=ticket_number(ticket.id),
+        ma_unique_id=ma_unique_id(ticket.buyer_user_id),
         holder_name=ticket.recipient_name or (buyer.full_name if buyer else "Guest"),
         holder_avatar_url=buyer.avatar_url if buyer else None,
         concert_title=concert.title if concert else "",
