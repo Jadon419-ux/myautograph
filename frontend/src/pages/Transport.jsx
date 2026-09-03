@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import client from "../api/client.js";
+import { useAuth } from "../auth/AuthContext.jsx";
 
 export default function Transport() {
+  const { user } = useAuth();
+  const isTransportManager = user?.role === "transport_manager";
+
   const [companies, setCompanies] = useState([]);
   const [myCompany, setMyCompany] = useState(null);
   const [myBuses, setMyBuses] = useState([]);
@@ -19,19 +23,24 @@ export default function Transport() {
   }
 
   useEffect(() => {
-    Promise.all([
-      client.get("/transport/companies").then(({ data }) => setCompanies(data)),
-      client
-        .get("/transport/companies/me")
-        .then(({ data }) => setMyCompany(data))
-        .catch(() => setMyCompany(null)),
-    ]).finally(() => setLoading(false));
+    const tasks = [client.get("/transport/companies").then(({ data }) => setCompanies(data))];
+    if (isTransportManager) {
+      tasks.push(
+        client
+          .get("/transport/companies/me")
+          .then(({ data }) => setMyCompany(data))
+          .catch(() => setMyCompany(null))
+      );
+    }
+    Promise.all(tasks).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (myCompany) {
+    if (isTransportManager && myCompany) {
       client.get("/transport/buses/mine").then(({ data }) => setMyBuses(data));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myCompany?.id]);
 
   async function registerCompany(e) {
@@ -74,10 +83,12 @@ export default function Transport() {
     <div className="mx-auto max-w-6xl px-6 py-12">
       <h1 className="text-2xl font-semibold text-brand-charcoal">Transport tickets</h1>
       <p className="mt-1 text-sm text-gray-500">
-        Browse transport companies, or register your own company and add buses.
+        {isTransportManager
+          ? "Browse transport companies, or register your own company and add buses."
+          : "Browse transport companies and their buses."}
       </p>
 
-      {!myCompany ? (
+      {isTransportManager && (!myCompany ? (
         <div className="card mt-8 max-w-lg">
           <h2 className="font-semibold text-brand-charcoal">Register your transport company</h2>
           <form onSubmit={registerCompany} className="mt-3 space-y-3">
@@ -164,7 +175,7 @@ export default function Transport() {
             </div>
           </div>
         </div>
-      )}
+      ))}
 
       <div className="mt-12">
         <h2 className="text-lg font-semibold text-brand-charcoal">All transport companies</h2>

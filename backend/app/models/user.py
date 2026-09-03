@@ -11,6 +11,7 @@ class RoleEnum(str, Enum):
     manager = "manager"
     admin = "admin"
     sales_agent = "sales_agent"
+    transport_manager = "transport_manager"
 
 
 class User(SQLModel, table=True):

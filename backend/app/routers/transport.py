@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.deps import get_current_user, get_transport_company_for_user
+from app.deps import get_transport_company_for_user, require_role
 from app.models.transport import TransportBus, TransportCompany
-from app.models.user import User
+from app.models.user import RoleEnum, User
 from app.schemas.transport import (
     TransportBusCreate,
     TransportBusRead,
@@ -58,7 +58,7 @@ def _get_owned_bus(session: Session, bus_id: int, company: TransportCompany) -> 
 def create_company(
     payload: TransportCompanyCreate,
     session: Session = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_role(RoleEnum.transport_manager)),
 ):
     existing = session.exec(
         select(TransportCompany).where(TransportCompany.owner_user_id == user.id)
@@ -90,7 +90,7 @@ def list_companies(session: Session = Depends(get_session)):
 @router.get("/companies/me", response_model=TransportCompanyRead)
 def get_my_company(
     session: Session = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_role(RoleEnum.transport_manager)),
 ):
     company = get_transport_company_for_user(user, session)
     return _company_to_read(session, company)
@@ -100,7 +100,7 @@ def get_my_company(
 def update_my_company(
     payload: TransportCompanyUpdate,
     session: Session = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_role(RoleEnum.transport_manager)),
 ):
     company = get_transport_company_for_user(user, session)
     data = payload.model_dump(exclude_unset=True)
@@ -137,7 +137,7 @@ def list_company_buses(company_id: int, session: Session = Depends(get_session))
 def create_bus(
     payload: TransportBusCreate,
     session: Session = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_role(RoleEnum.transport_manager)),
 ):
     company = get_transport_company_for_user(user, session)
 
@@ -164,7 +164,7 @@ def create_bus(
 @router.get("/buses/mine", response_model=list[TransportBusRead])
 def list_my_buses(
     session: Session = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_role(RoleEnum.transport_manager)),
 ):
     company = get_transport_company_for_user(user, session)
     buses = session.exec(select(TransportBus).where(TransportBus.company_id == company.id)).all()
@@ -176,7 +176,7 @@ def update_bus(
     bus_id: int,
     payload: TransportBusUpdate,
     session: Session = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_role(RoleEnum.transport_manager)),
 ):
     company = get_transport_company_for_user(user, session)
     bus = _get_owned_bus(session, bus_id, company)
@@ -194,7 +194,7 @@ def update_bus(
 def delete_bus(
     bus_id: int,
     session: Session = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_role(RoleEnum.transport_manager)),
 ):
     company = get_transport_company_for_user(user, session)
     bus = _get_owned_bus(session, bus_id, company)

@@ -9,6 +9,7 @@ const ROLES = [
   { value: "agent", label: "Agent" },
   { value: "manager", label: "Manager" },
   { value: "sales_agent", label: "Ticket Sales Agent" },
+  { value: "transport_manager", label: "Transport Manager" },
 ];
 
 export default function Signup() {
