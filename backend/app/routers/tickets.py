@@ -51,6 +51,14 @@ def _get_owned_category(session: Session, category_id: int, user: User) -> Ticke
     return category
 
 
+def _resolve_ticket_flyer_url(concert: Concert | None, category: TicketCategory | None) -> str | None:
+    # A ticket type's own image (shown on the actual ticket) takes priority over
+    # the event's public promotional flyer.
+    if category and category.flyer_url:
+        return category.flyer_url
+    return concert.flyer_url if concert else None
+
+
 def _build_ticket_read(session: Session, ticket: Ticket) -> TicketRead:
     concert = session.get(Concert, ticket.concert_id)
     category = session.get(TicketCategory, ticket.ticket_category_id)
@@ -64,7 +72,7 @@ def _build_ticket_read(session: Session, ticket: Ticket) -> TicketRead:
         event_date=concert.event_date if concert else ticket.created_at,
         category_name=category.name if category else "",
         holder_avatar_url=buyer.avatar_url if buyer else None,
-        concert_flyer_url=concert.flyer_url if concert else None,
+        concert_flyer_url=_resolve_ticket_flyer_url(concert, category),
     )
 
 
@@ -398,7 +406,7 @@ def verify_ticket_public(qr_token: str, session: Session = Depends(get_session))
         category_name=category.name if category else "",
         status=ticket.status,
         checked_in_at=ticket.checked_in_at,
-        concert_flyer_url=concert.flyer_url if concert else None,
+        concert_flyer_url=_resolve_ticket_flyer_url(concert, category),
     )
 
 

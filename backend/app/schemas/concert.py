@@ -10,7 +10,7 @@ class ConcertCreate(BaseModel):
     venue: str
     event_date: datetime
     description: str = ""
-    celebrity_id: int | None = None
+    celebrity_ids: list[int] = []
     agent_commission_percent: float = 0.0
     flyer_url: str | None = None
 

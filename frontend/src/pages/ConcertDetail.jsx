@@ -69,6 +69,13 @@ export default function ConcertDetail() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <div className="card">
+        {concert.flyer_url && (
+          <img
+            src={concert.flyer_url}
+            alt={concert.title}
+            className="mb-4 h-56 w-full rounded-md object-cover"
+          />
+        )}
         <h1 className="text-2xl font-semibold text-brand-charcoal">{concert.title}</h1>
         <p className="mt-1 text-sm text-gray-500">
           {concert.venue} · {new Date(concert.event_date).toLocaleString()}
@@ -102,9 +109,13 @@ export default function ConcertDetail() {
           {categories.map((c) => {
             const remaining = c.quantity_total - c.quantity_sold;
             return (
-              <div key={c.id} className="flex items-center justify-between rounded-md border border-brand-border p-3">
+              <div key={c.id} className="flex items-center gap-3 rounded-md border border-brand-border p-3">
+                {c.flyer_url && (
+                  <img src={c.flyer_url} alt="" className="h-14 w-14 shrink-0 rounded-md object-cover" />
+                )}
                 <div>
                   <p className="font-medium text-brand-charcoal">{c.name}</p>
+                  {c.description && <p className="text-sm text-gray-500">{c.description}</p>}
                   <p className="text-sm text-gray-500">
                     {c.is_free ? "Free" : formatNaira(c.price_kobo)} · {remaining} remaining
                   </p>

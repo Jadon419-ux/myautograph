@@ -27,12 +27,15 @@ export default function AgentDashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [categoryForm, setCategoryForm] = useState({
     name: "",
+    description: "",
+    flyer_url: "",
     is_free: false,
     price_naira: "",
     quantity_total: "",
     sales_start: "",
     sales_end: "",
   });
+  const [categoryFlyerUploading, setCategoryFlyerUploading] = useState(false);
   const [inviteForm, setInviteForm] = useState({ celebrity_id: "", commission_percent: "" });
   const [showScanner, setShowScanner] = useState(false);
   const [manualToken, setManualToken] = useState("");
@@ -119,22 +122,49 @@ export default function AgentDashboard() {
     loadTicketing(concertId);
   }
 
+  async function handleCategoryFlyerChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setError("");
+    setCategoryFlyerUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setCategoryForm((f) => ({ ...f, flyer_url: url }));
+    } catch (err) {
+      setError(err.message || "Could not upload ticket image.");
+    } finally {
+      setCategoryFlyerUploading(false);
+      e.target.value = "";
+    }
+  }
+
   async function createCategory(e) {
     e.preventDefault();
     setError("");
     try {
       await client.post(`/tickets/concerts/${selectedConcertId}/categories`, {
         name: categoryForm.name,
+        description: categoryForm.description,
+        flyer_url: categoryForm.flyer_url || null,
         is_free: categoryForm.is_free,
         price_kobo: categoryForm.is_free ? 0 : Math.round(Number(categoryForm.price_naira) * 100),
         quantity_total: Number(categoryForm.quantity_total),
         sales_start: toUtcIso(categoryForm.sales_start),
         sales_end: toUtcIso(categoryForm.sales_end),
       });
-      setCategoryForm({ name: "", is_free: false, price_naira: "", quantity_total: "", sales_start: "", sales_end: "" });
+      setCategoryForm({
+        name: "",
+        description: "",
+        flyer_url: "",
+        is_free: false,
+        price_naira: "",
+        quantity_total: "",
+        sales_start: "",
+        sales_end: "",
+      });
       loadTicketing(selectedConcertId);
     } catch (err) {
-      setError(err.response?.data?.detail || "Could not create ticket category.");
+      setError(err.response?.data?.detail || "Could not create ticket type.");
     }
   }
 
@@ -196,10 +226,14 @@ export default function AgentDashboard() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-lg font-semibold text-brand-charcoal">Create a concert</h2>
+        <h2 className="text-lg font-semibold text-brand-charcoal">Create an event</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Once it's created, link celebrities to it below and add the ticket types that will all
+          live under it.
+        </p>
         <form onSubmit={createConcert} className="card mt-3 space-y-3">
           <div>
-            <label className="label">Title</label>
+            <label className="label">Event name</label>
             <input
               required
               className="input-field"
@@ -208,7 +242,34 @@ export default function AgentDashboard() {
             />
           </div>
           <div>
-            <label className="label">Venue</label>
+            <label className="label">Event promotion picture</label>
+            {form.flyer_url && (
+              <img
+                src={form.flyer_url}
+                alt="Flyer preview"
+                className="mb-2 h-32 w-full rounded-md object-cover"
+              />
+            )}
+            {CLOUDINARY_CONFIGURED ? (
+              <label className="btn-secondary inline-block cursor-pointer">
+                {flyerUploading ? "Uploading..." : form.flyer_url ? "Change picture" : "Upload picture"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFlyerChange}
+                  disabled={flyerUploading}
+                />
+              </label>
+            ) : (
+              <p className="text-xs text-gray-400">Flyer uploads aren't configured yet.</p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Shown publicly on the event's page so fans browsing can see it.
+            </p>
+          </div>
+          <div>
+            <label className="label">Location</label>
             <input
               required
               className="input-field"
@@ -235,39 +296,12 @@ export default function AgentDashboard() {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
-          <div>
-            <label className="label">Event flyer</label>
-            {form.flyer_url && (
-              <img
-                src={form.flyer_url}
-                alt="Flyer preview"
-                className="mb-2 h-32 w-full rounded-md object-cover"
-              />
-            )}
-            {CLOUDINARY_CONFIGURED ? (
-              <label className="btn-secondary inline-block cursor-pointer">
-                {flyerUploading ? "Uploading..." : form.flyer_url ? "Change flyer" : "Upload flyer"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFlyerChange}
-                  disabled={flyerUploading}
-                />
-              </label>
-            ) : (
-              <p className="text-xs text-gray-400">Flyer uploads aren't configured yet.</p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">
-              Attached to every ticket for this event, next to the QR code, like a real event ticket stub.
-            </p>
-          </div>
-          <button type="submit" className="btn-primary">Create concert</button>
+          <button type="submit" className="btn-primary">Create event</button>
         </form>
       </section>
 
       <section className="mt-10">
-        <h2 className="text-lg font-semibold text-brand-charcoal">My concerts</h2>
+        <h2 className="text-lg font-semibold text-brand-charcoal">My events</h2>
         <div className="mt-3 space-y-4">
           {concerts.map((c) => (
             <div key={c.id} className="card">
@@ -384,27 +418,75 @@ export default function AgentDashboard() {
           </h2>
 
           <div className="card mt-3">
-            <h3 className="font-semibold text-brand-charcoal">Ticket categories</h3>
+            <h3 className="font-semibold text-brand-charcoal">Ticket types</h3>
             <div className="mt-2 space-y-2">
               {categories.map((cat) => (
-                <div key={cat.id} className="flex items-center justify-between rounded-md border border-brand-border p-2 text-sm">
-                  <span>{cat.name}</span>
-                  <span className="text-gray-500">
+                <div key={cat.id} className="flex items-center gap-3 rounded-md border border-brand-border p-2 text-sm">
+                  {cat.flyer_url && (
+                    <img src={cat.flyer_url} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-medium text-brand-charcoal">{cat.name}</p>
+                    {cat.description && <p className="text-xs text-gray-500">{cat.description}</p>}
+                  </div>
+                  <span className="shrink-0 text-gray-500">
                     {cat.is_free ? "Free" : formatNaira(cat.price_kobo)} · {cat.quantity_sold}/{cat.quantity_total} sold
                   </span>
                 </div>
               ))}
-              {categories.length === 0 && <p className="text-sm text-gray-500">No categories yet.</p>}
+              {categories.length === 0 && <p className="text-sm text-gray-500">No ticket types yet.</p>}
             </div>
 
             <form onSubmit={createCategory} className="mt-4 space-y-2 border-t border-brand-border pt-4">
+              <h4 className="text-sm font-semibold text-brand-charcoal">Add a new ticket type</h4>
               <div>
-                <label className="label">Category name</label>
+                <label className="label">Ticket title</label>
                 <input
                   required
                   className="input-field"
                   value={categoryForm.name}
                   onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label">Ticket image</label>
+                {categoryForm.flyer_url && (
+                  <img
+                    src={categoryForm.flyer_url}
+                    alt="Ticket image preview"
+                    className="mb-2 h-24 w-full rounded-md object-cover"
+                  />
+                )}
+                {CLOUDINARY_CONFIGURED ? (
+                  <label className="btn-secondary inline-block cursor-pointer">
+                    {categoryFlyerUploading
+                      ? "Uploading..."
+                      : categoryForm.flyer_url
+                      ? "Change image"
+                      : "Upload image"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleCategoryFlyerChange}
+                      disabled={categoryFlyerUploading}
+                    />
+                  </label>
+                ) : (
+                  <p className="text-xs text-gray-400">Image uploads aren't configured yet.</p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  Shown next to the QR code on this ticket type's tickets. If left blank, the event's
+                  promotion picture is used instead.
+                </p>
+              </div>
+              <div>
+                <label className="label">Ticket description</label>
+                <textarea
+                  className="input-field"
+                  rows={2}
+                  value={categoryForm.description}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
                 />
               </div>
               <label className="flex items-center gap-2 text-sm">
@@ -417,7 +499,7 @@ export default function AgentDashboard() {
               </label>
               {!categoryForm.is_free && (
                 <div>
-                  <label className="label">Price (₦)</label>
+                  <label className="label">Ticket price (₦)</label>
                   <input
                     type="number"
                     min="0"
@@ -459,7 +541,7 @@ export default function AgentDashboard() {
                   onChange={(e) => setCategoryForm({ ...categoryForm, sales_end: e.target.value })}
                 />
               </div>
-              <button type="submit" className="btn-primary">Add category</button>
+              <button type="submit" className="btn-primary">Add new ticket type</button>
             </form>
           </div>
 

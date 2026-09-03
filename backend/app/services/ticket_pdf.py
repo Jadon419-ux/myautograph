@@ -229,17 +229,21 @@ def _add_ticket_page(
 def build_tickets_pdf(session: Session, tickets: list[Ticket]) -> bytes:
     pdf = FPDF(unit="pt", format=(STUB_W + 2 * OUTER_MARGIN, STUB_H))
     pdf.set_auto_page_break(False)
-    flyer_cache: dict[int, bytes | None] = {}
+    flyer_cache: dict[str, bytes | None] = {}
     for ticket in tickets:
         concert = session.get(Concert, ticket.concert_id)
         category = session.get(TicketCategory, ticket.ticket_category_id)
+        # A ticket type's own image takes priority over the event's public flyer.
+        flyer_url = (category.flyer_url if category and category.flyer_url else None) or (
+            concert.flyer_url if concert else None
+        )
         flyer_bytes = None
-        if concert and concert.flyer_url:
-            if concert.id not in flyer_cache:
-                flyer_cache[concert.id] = _fetch_flyer_jpeg(
-                    concert.flyer_url, FLYER_W, STUB_H - 2 * OUTER_MARGIN
+        if flyer_url:
+            if flyer_url not in flyer_cache:
+                flyer_cache[flyer_url] = _fetch_flyer_jpeg(
+                    flyer_url, FLYER_W, STUB_H - 2 * OUTER_MARGIN
                 )
-            flyer_bytes = flyer_cache[concert.id]
+            flyer_bytes = flyer_cache[flyer_url]
         _add_ticket_page(pdf, ticket, concert, category, flyer_bytes)
     return bytes(pdf.output())
 

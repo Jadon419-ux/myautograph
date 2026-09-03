@@ -63,31 +63,35 @@ def create_concert(
     session: Session = Depends(get_session),
     user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
 ):
-    celebrity_id = payload.celebrity_id
+    celebrity_ids = payload.celebrity_ids or []
 
     if user.role == RoleEnum.manager:
-        if not celebrity_id:
-            raise HTTPException(status_code=400, detail="Select a celebrity (star) for this ticket")
-        in_roster = session.exec(
-            select(ManagerRoster).where(
-                ManagerRoster.manager_id == user.id, ManagerRoster.celebrity_id == celebrity_id
-            )
-        ).first()
-        if not in_roster:
-            raise HTTPException(status_code=404, detail="Celebrity not found in your roster")
-    elif celebrity_id is not None and not session.get(CelebrityProfile, celebrity_id):
-        raise HTTPException(status_code=404, detail="Celebrity not found")
+        if not celebrity_ids:
+            raise HTTPException(status_code=400, detail="Select at least one celebrity (star) for this event")
+        for celebrity_id in celebrity_ids:
+            in_roster = session.exec(
+                select(ManagerRoster).where(
+                    ManagerRoster.manager_id == user.id, ManagerRoster.celebrity_id == celebrity_id
+                )
+            ).first()
+            if not in_roster:
+                raise HTTPException(status_code=404, detail="Celebrity not found in your roster")
+    else:
+        for celebrity_id in celebrity_ids:
+            if not session.get(CelebrityProfile, celebrity_id):
+                raise HTTPException(status_code=404, detail="Celebrity not found")
 
     _validate_agent_commission_percent(payload.agent_commission_percent)
 
-    concert_data = payload.model_dump(exclude={"celebrity_id"})
+    concert_data = payload.model_dump(exclude={"celebrity_ids"})
     concert = Concert(agent_id=user.id, **concert_data)
     session.add(concert)
     session.commit()
     session.refresh(concert)
 
-    if celebrity_id is not None:
+    for celebrity_id in celebrity_ids:
         session.add(ConcertCelebrityLink(concert_id=concert.id, celebrity_id=celebrity_id))
+    if celebrity_ids:
         session.commit()
 
     return _to_read(session, concert)
@@ -106,7 +110,7 @@ def update_concert(
 
     _validate_agent_commission_percent(payload.agent_commission_percent)
 
-    for key, value in payload.model_dump(exclude={"celebrity_id"}).items():
+    for key, value in payload.model_dump(exclude={"celebrity_ids"}).items():
         setattr(concert, key, value)
     session.add(concert)
     session.commit()

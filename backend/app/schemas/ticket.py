@@ -10,6 +10,8 @@ from app.models.user import RoleEnum
 
 class TicketCategoryCreate(BaseModel):
     name: str
+    description: str = ""
+    flyer_url: str | None = None
     is_free: bool = False
     price_kobo: int = 0
     quantity_total: int
@@ -19,6 +21,8 @@ class TicketCategoryCreate(BaseModel):
 
 class TicketCategoryUpdate(BaseModel):
     name: str | None = None
+    description: str | None = None
+    flyer_url: str | None = None
     is_free: bool | None = None
     price_kobo: int | None = None
     quantity_total: int | None = None
@@ -30,6 +34,8 @@ class TicketCategoryRead(BaseModel):
     id: int
     concert_id: int
     name: str
+    description: str
+    flyer_url: str | None = None
     is_free: bool
     price_kobo: int
     quantity_total: int

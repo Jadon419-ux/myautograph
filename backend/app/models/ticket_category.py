@@ -7,6 +7,8 @@ class TicketCategory(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     concert_id: int = Field(foreign_key="concert.id")
     name: str
+    description: str = ""
+    flyer_url: str | None = None
     is_free: bool = False
     price_kobo: int = 0
     quantity_total: int

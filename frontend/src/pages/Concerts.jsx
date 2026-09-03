@@ -23,7 +23,14 @@ export default function Concerts() {
       <div className="mt-8 space-y-4">
         {concerts.map((c) => (
           <Link key={c.id} to={`/concerts/${c.id}`} className="card block hover:shadow-md">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              {c.flyer_url && (
+                <img
+                  src={c.flyer_url}
+                  alt={c.title}
+                  className="h-20 w-20 shrink-0 rounded-md object-cover"
+                />
+              )}
               <div>
                 <h2 className="text-lg font-semibold text-brand-charcoal">{c.title}</h2>
                 <p className="text-sm text-gray-500">

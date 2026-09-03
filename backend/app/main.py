@@ -10,6 +10,7 @@ from app.database import create_db_and_tables, engine
 from app.models.autograph import Autograph, AutographMedium, AutographRequest, AutographRequestType
 from app.models.celebrity import CelebrityProfile, VerificationStatus
 from app.models.concert import Concert
+from app.models.ticket_category import TicketCategory
 from app.models.ticket_order import TicketOrder
 from app.models.user import User
 from app.routers import (
@@ -142,6 +143,15 @@ def on_startup():
                 order.recipient_email = ""
             session.add(order)
         if orders_needing_backfill:
+            session.commit()
+
+        categories_needing_backfill = session.exec(
+            select(TicketCategory).where(TicketCategory.description.is_(None))
+        ).all()
+        for category in categories_needing_backfill:
+            category.description = ""
+            session.add(category)
+        if categories_needing_backfill:
             session.commit()
 
 
