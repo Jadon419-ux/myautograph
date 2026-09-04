@@ -18,6 +18,7 @@ from app.routers import (
     auth,
     autographs,
     celebrities,
+    chatbot,
     concerts,
     managers,
     marketplace,
@@ -172,6 +173,7 @@ app.include_router(merchandise.router)
 app.include_router(star_auction.router)
 app.include_router(transport.router)
 app.include_router(withdrawals.router)
+app.include_router(chatbot.router)
 
 
 @app.get("/health")

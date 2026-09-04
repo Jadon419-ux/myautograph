@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_username: str = ""
     smtp_password: str = ""
+    gemini_api_key: str = ""
 
     class Config:
         env_file = ".env"
