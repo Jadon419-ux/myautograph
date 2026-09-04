@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import client from "../api/client.js";
+import { BRAND } from "../brand.js";
+
+const SUPPORT_MAILTO = `mailto:${BRAND.email}?subject=${encodeURIComponent(
+  "My Autograph Support Request"
+)}`;
 
 const GREETING = {
   role: "assistant",
@@ -60,6 +65,17 @@ export default function ChatWidget() {
             </button>
           </div>
 
+          <a
+            href={SUPPORT_MAILTO}
+            className="flex items-center justify-center gap-1.5 border-b border-brand-border bg-brand-greenLight px-4 py-2 text-xs font-medium text-brand-greenDark hover:opacity-80"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="m4 7 8 6 8-6" />
+            </svg>
+            Having a technical issue? Email {BRAND.email}
+          </a>
+
           <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -83,7 +99,17 @@ export default function ChatWidget() {
             )}
           </div>
 
-          {error && <p className="px-4 pb-1 text-xs text-red-600">{error}</p>}
+          {error && (
+            <div className="px-4 pb-2">
+              <p className="text-xs text-red-600">{error}</p>
+              <a
+                href={SUPPORT_MAILTO}
+                className="btn-secondary mt-2 inline-block w-full text-center text-xs"
+              >
+                Email customer support instead
+              </a>
+            </div>
+          )}
 
           <form onSubmit={sendMessage} className="flex gap-2 border-t border-brand-border p-3">
             <input

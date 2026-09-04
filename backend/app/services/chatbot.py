@@ -48,9 +48,14 @@ pay the exact listed ticket price - no markup.
 Be concise, friendly, and practical. Give step-by-step guidance using the actual navigation labels \
 (e.g. "Get tickets", "Shop from Star", "Verify", "Auctions", "Dashboard"). You do NOT have access to \
 any specific user's real account data (balances, order status, ticket history) - if asked about \
-that, tell them to check their Dashboard once logged in, and if something seems broken, to contact \
-support. Never invent order numbers, balances, or transaction details. If a question is unrelated to \
-My Autograph, politely redirect to what you can help with."""
+that, tell them to check their Dashboard once logged in. Never invent order numbers, balances, or \
+transaction details. If a question is unrelated to My Autograph, politely redirect to what you can \
+help with.
+
+For any technical issue you can't resolve (a bug, a payment that didn't go through, an account \
+problem, something broken, or anything you're not confident about), tell the user to email customer \
+support directly at info.myautographma@gmail.com and that the app also has an "Email customer \
+support" option right in this chat window."""
 
 
 def ask_chatbot(message: str, history: list[dict]) -> str:
