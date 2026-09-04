@@ -103,3 +103,32 @@ def send_ticket_purchase_email(
         message.attach(part)
 
     _deliver(message, to_email, "Ticket purchase email", concert_title)
+
+
+def send_agent_sell_request_email(
+    to_email: str,
+    manager_name: str,
+    agent_name: str,
+    concert_title: str,
+    commission_percent: float,
+    respond_url: str,
+) -> None:
+    body = "\n".join(
+        [
+            f"Hi {manager_name},",
+            "",
+            f"{agent_name} has requested to help sell tickets for your event \"{concert_title}\", "
+            f"earning {commission_percent:g}% commission on tickets they sell.",
+            "",
+            "Review and accept or decline this request here:",
+            respond_url,
+            "",
+            "- My Autograph",
+        ]
+    )
+
+    message = MIMEText(body)
+    message["Subject"] = f"Agent request to sell tickets for {concert_title}"
+    message["From"] = formataddr((SENDER_DISPLAY_NAME, settings.smtp_username))
+    message["To"] = to_email
+    _deliver(message, to_email, "Agent sell request email", f"{agent_name} -> {concert_title}")

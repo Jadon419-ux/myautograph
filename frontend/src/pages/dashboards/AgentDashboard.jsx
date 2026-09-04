@@ -13,17 +13,18 @@ function formatNaira(kobo) {
 
 export default function AgentDashboard() {
   const { user } = useAuth();
+  const [allEvents, setAllEvents] = useState([]);
   const [concerts, setConcerts] = useState([]);
   const [celebrities, setCelebrities] = useState([]);
-  const [form, setForm] = useState({ title: "", venue: "", event_date: "", description: "", flyer_url: "" });
   const [linkSelections, setLinkSelections] = useState({});
   const [error, setError] = useState("");
-  const [flyerUploading, setFlyerUploading] = useState(false);
+
+  const [mySellRequests, setMySellRequests] = useState([]);
+  const [requestingConcertId, setRequestingConcertId] = useState(null);
 
   const [selectedConcertId, setSelectedConcertId] = useState(null);
   const [categories, setCategories] = useState([]);
   const [referrals, setReferrals] = useState([]);
-  const [myInvites, setMyInvites] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [categoryForm, setCategoryForm] = useState({
     name: "",
@@ -44,21 +45,14 @@ export default function AgentDashboard() {
 
   async function loadAll() {
     const { data } = await client.get("/concerts");
+    setAllEvents(data);
     setConcerts(data.filter((c) => c.agent_id === user.id));
     const { data: allCelebrities } = await client.get("/celebrities");
     setCelebrities(allCelebrities);
-    const { data: invites } = await client.get("/tickets/referrals/mine");
-    setMyInvites(invites.filter((r) => r.invitee_role === "agent"));
-  }
-
-  async function respondToInvite(id, action) {
-    setError("");
-    try {
-      await client.post(`/tickets/referrals/${id}/${action}`);
-      loadAll();
-    } catch (err) {
-      setError(err.response?.data?.detail || "Could not respond to invite.");
-    }
+    const { data: refs } = await client.get("/tickets/referrals/mine");
+    setMySellRequests(
+      refs.filter((r) => r.invitee_role === "agent" && r.invitee_user_id === user.id)
+    );
   }
 
   useEffect(() => {
@@ -66,35 +60,16 @@ export default function AgentDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleFlyerChange(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+  async function requestToSell(concertId) {
     setError("");
-    setFlyerUploading(true);
+    setRequestingConcertId(concertId);
     try {
-      const url = await uploadImage(file);
-      setForm((f) => ({ ...f, flyer_url: url }));
-    } catch (err) {
-      setError(err.message || "Could not upload flyer.");
-    } finally {
-      setFlyerUploading(false);
-      e.target.value = "";
-    }
-  }
-
-  async function createConcert(e) {
-    e.preventDefault();
-    setError("");
-    try {
-      await client.post("/concerts", {
-        ...form,
-        event_date: toUtcIso(form.event_date),
-        flyer_url: form.flyer_url || null,
-      });
-      setForm({ title: "", venue: "", event_date: "", description: "", flyer_url: "" });
+      await client.post(`/tickets/concerts/${concertId}/referrals/agents/request`);
       loadAll();
     } catch (err) {
-      setError(err.response?.data?.detail || "Could not create concert.");
+      setError(err.response?.data?.detail || "Could not send request.");
+    } finally {
+      setRequestingConcertId(null);
     }
   }
 
@@ -226,82 +201,53 @@ export default function AgentDashboard() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-lg font-semibold text-brand-charcoal">Create an event</h2>
+        <h2 className="text-lg font-semibold text-brand-charcoal">Request to sell tickets</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Once it's created, link celebrities to it below and add the ticket types that will all
-          live under it.
+          Events are created by Managers. Browse events below and request to help sell tickets for
+          one — the Manager will accept or decline your request.
         </p>
-        <form onSubmit={createConcert} className="card mt-3 space-y-3">
-          <div>
-            <label className="label">Event name</label>
-            <input
-              required
-              className="input-field"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="label">Event promotion picture</label>
-            {form.flyer_url && (
-              <img
-                src={form.flyer_url}
-                alt="Flyer preview"
-                className="mb-2 h-32 w-full rounded-md object-cover"
-              />
-            )}
-            {CLOUDINARY_CONFIGURED ? (
-              <label className="btn-secondary inline-block cursor-pointer">
-                {flyerUploading ? "Uploading..." : form.flyer_url ? "Change picture" : "Upload picture"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFlyerChange}
-                  disabled={flyerUploading}
-                />
-              </label>
-            ) : (
-              <p className="text-xs text-gray-400">Flyer uploads aren't configured yet.</p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">
-              Shown publicly on the event's page so fans browsing can see it.
-            </p>
-          </div>
-          <div>
-            <label className="label">Location</label>
-            <input
-              required
-              className="input-field"
-              value={form.venue}
-              onChange={(e) => setForm({ ...form, venue: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="label">Event date</label>
-            <input
-              type="datetime-local"
-              required
-              className="input-field"
-              value={form.event_date}
-              onChange={(e) => setForm({ ...form, event_date: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="label">Description</label>
-            <textarea
-              className="input-field"
-              rows={3}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-          </div>
-          <button type="submit" className="btn-primary">Create event</button>
-        </form>
+        <div className="mt-3 space-y-3">
+          {allEvents.map((c) => {
+            const myRequest = mySellRequests.find((r) => r.concert_id === c.id);
+            return (
+              <div key={c.id} className="card flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-brand-charcoal">{c.title}</p>
+                  <p className="text-sm text-gray-500">
+                    {c.venue} · {new Date(c.event_date).toLocaleString()}
+                  </p>
+                </div>
+                {myRequest ? (
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
+                      myRequest.status === "accepted"
+                        ? "bg-brand-greenLight text-brand-greenDark"
+                        : myRequest.status === "declined"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {myRequest.status}
+                  </span>
+                ) : (
+                  <button
+                    className="btn-secondary shrink-0"
+                    disabled={requestingConcertId === c.id}
+                    onClick={() => requestToSell(c.id)}
+                  >
+                    {requestingConcertId === c.id ? "Sending..." : "Request to sell tickets"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          {allEvents.length === 0 && <p className="text-sm text-gray-500">No events yet.</p>}
+        </div>
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-brand-charcoal">My events</h2>
+      {concerts.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-lg font-semibold text-brand-charcoal">My events</h2>
         <div className="mt-3 space-y-4">
           {concerts.map((c) => (
             <div key={c.id} className="card">
@@ -348,44 +294,54 @@ export default function AgentDashboard() {
           ))}
           {concerts.length === 0 && <p className="text-sm text-gray-500">No concerts yet.</p>}
         </div>
-      </section>
+        </section>
+      )}
 
-      {myInvites.length > 0 && (
+      {mySellRequests.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-lg font-semibold text-brand-charcoal">Ticket sales invites</h2>
+          <h2 className="text-lg font-semibold text-brand-charcoal">My sell requests</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Managers can invite you to help sell tickets for their star's events. Buyers pay the
-            listed ticket price — no markup. When you sell via your link, you automatically earn the
-            commission percentage the manager set for that event, deposited straight to your wallet.
+            Buyers pay the listed ticket price — no markup. Once a Manager accepts your request,
+            you'll earn the commission percentage they set for that event, deposited straight to
+            your wallet whenever someone buys through your link.
           </p>
           <div className="mt-3 space-y-3">
-            {myInvites
+            {mySellRequests
               .filter((r) => r.status === "pending")
               .map((r) => (
                 <div key={r.id} className="card flex items-center justify-between gap-4">
                   <p className="text-sm text-gray-600">
-                    Invite to sell tickets for concert #{r.concert_id} — {r.commission_percent}% commission
+                    Request to sell tickets for <span className="font-medium">{r.concert_title}</span> —{" "}
+                    {r.commission_percent}% commission
                   </p>
-                  <div className="flex shrink-0 gap-2">
-                    <button className="btn-primary" onClick={() => respondToInvite(r.id, "accept")}>
-                      Accept
-                    </button>
-                    <button className="btn-secondary" onClick={() => respondToInvite(r.id, "decline")}>
-                      Decline
-                    </button>
-                  </div>
+                  <span className="shrink-0 rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
+                    Awaiting manager
+                  </span>
                 </div>
               ))}
-            {myInvites
+            {mySellRequests
               .filter((r) => r.status === "accepted")
               .map((r) => (
                 <div key={r.id} className="card">
                   <p className="text-sm text-gray-600">
-                    Concert #{r.concert_id} — {r.commission_percent}% commission
+                    <span className="font-medium">{r.concert_title}</span> — {r.commission_percent}%
+                    commission
                   </p>
                   <p className="mt-2 break-all text-xs text-gray-500">
                     {`${window.location.origin}/concerts/${r.concert_id}?ref=${r.code}`}
                   </p>
+                </div>
+              ))}
+            {mySellRequests
+              .filter((r) => r.status === "declined")
+              .map((r) => (
+                <div key={r.id} className="card">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">{r.concert_title}</span>
+                  </p>
+                  <span className="mt-1 inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+                    Declined
+                  </span>
                 </div>
               ))}
           </div>

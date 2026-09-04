@@ -10,6 +10,7 @@ from app.database import create_db_and_tables, engine
 from app.models.autograph import Autograph, AutographMedium, AutographRequest, AutographRequestType
 from app.models.celebrity import CelebrityProfile, VerificationStatus
 from app.models.concert import Concert
+from app.models.referral import ReferralLink
 from app.models.ticket_category import TicketCategory
 from app.models.ticket_order import TicketOrder
 from app.models.user import User
@@ -153,6 +154,15 @@ def on_startup():
             category.description = ""
             session.add(category)
         if categories_needing_backfill:
+            session.commit()
+
+        referrals_needing_backfill = session.exec(
+            select(ReferralLink).where(ReferralLink.requested_by_invitee.is_(None))
+        ).all()
+        for link in referrals_needing_backfill:
+            link.requested_by_invitee = False
+            session.add(link)
+        if referrals_needing_backfill:
             session.commit()
 
 

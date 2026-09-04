@@ -5,6 +5,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
+from app.config import settings
 from app.database import get_session
 from app.deps import require_role
 from app.models.celebrity import CelebrityProfile
@@ -15,7 +16,7 @@ from app.models.ticket_category import TicketCategory
 from app.models.ticket_order import TicketOrder, TicketOrderStatus
 from app.models.user import RoleEnum, User
 from app.schemas.ticket import (
-    AgentInviteCreate,
+    AgentSellRequestRead,
     ConcertAnalyticsRead,
     ReferralInviteCreate,
     ReferralLinkRead,
@@ -133,6 +134,16 @@ def delete_category(
 # ---- Referral links ----
 
 
+def _referral_to_read(session: Session, link: ReferralLink) -> ReferralLinkRead:
+    concert = session.get(Concert, link.concert_id)
+    invitee = session.get(User, link.invitee_user_id) if link.invitee_user_id else None
+    return ReferralLinkRead(
+        **link.model_dump(),
+        concert_title=concert.title if concert else "",
+        invitee_name=invitee.full_name if invitee else None,
+    )
+
+
 @router.post("/concerts/{concert_id}/referrals", response_model=ReferralLinkRead)
 def invite_celebrity_seller(
     concert_id: int,
@@ -156,7 +167,7 @@ def invite_celebrity_seller(
     session.add(link)
     session.commit()
     session.refresh(link)
-    return link
+    return _referral_to_read(session, link)
 
 
 @router.post("/concerts/{concert_id}/referrals/sales-agents", response_model=ReferralLinkRead)
@@ -191,34 +202,61 @@ def invite_sales_agent(
     session.add(link)
     session.commit()
     session.refresh(link)
-    return link
+    return _referral_to_read(session, link)
 
 
-@router.post("/concerts/{concert_id}/referrals/agents", response_model=ReferralLinkRead)
-def invite_agent_seller(
+@router.post("/concerts/{concert_id}/referrals/agents/request", response_model=ReferralLinkRead)
+def request_to_sell_tickets(
     concert_id: int,
-    payload: AgentInviteCreate,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.manager)),
+    user: User = Depends(require_role(RoleEnum.agent)),
 ):
-    concert = _get_owned_concert(session, concert_id, user)
+    concert = session.get(Concert, concert_id)
+    if not concert:
+        raise HTTPException(status_code=404, detail="Concert not found")
 
-    agent = session.exec(select(User).where(User.email == payload.email)).first()
-    if not agent or agent.role != RoleEnum.agent:
-        raise HTTPException(status_code=404, detail="No agent account found with that email")
+    existing = session.exec(
+        select(ReferralLink).where(
+            ReferralLink.concert_id == concert_id,
+            ReferralLink.invitee_user_id == user.id,
+            ReferralLink.invitee_role == RoleEnum.agent,
+            ReferralLink.status == ReferralLinkStatus.pending,
+        )
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="You already have a pending request for this event")
 
     link = ReferralLink(
         concert_id=concert_id,
         code=uuid.uuid4().hex[:10],
         inviter_user_id=user.id,
         invitee_role=RoleEnum.agent,
-        invitee_user_id=agent.id,
+        invitee_user_id=user.id,
         commission_percent=concert.agent_commission_percent,
+        requested_by_invitee=True,
     )
     session.add(link)
     session.commit()
     session.refresh(link)
-    return link
+
+    manager = session.get(User, concert.agent_id)
+    if manager and manager.email:
+        from app.services.email import send_agent_sell_request_email
+
+        respond_url = f"{settings.frontend_base_url}/agent-requests/{link.code}"
+        try:
+            send_agent_sell_request_email(
+                to_email=manager.email,
+                manager_name=manager.full_name,
+                agent_name=user.full_name,
+                concert_title=concert.title,
+                commission_percent=concert.agent_commission_percent,
+                respond_url=respond_url,
+            )
+        except Exception as exc:  # never let email failure break the request
+            print(f"Failed to send agent-request email for referral {link.id}: {exc}")
+
+    return _referral_to_read(session, link)
 
 
 @router.get("/referrals/mine", response_model=list[ReferralLinkRead])
@@ -228,44 +266,119 @@ def list_my_referrals(
         require_role(RoleEnum.celebrity, RoleEnum.sales_agent, RoleEnum.agent, RoleEnum.manager)
     ),
 ):
-    return session.exec(
+    owned_concert_ids = select(Concert.id).where(Concert.agent_id == user.id)
+    links = session.exec(
         select(ReferralLink).where(
-            (ReferralLink.inviter_user_id == user.id) | (ReferralLink.invitee_user_id == user.id)
+            (ReferralLink.inviter_user_id == user.id)
+            | (ReferralLink.invitee_user_id == user.id)
+            | (
+                (ReferralLink.requested_by_invitee.is_(True))
+                & (ReferralLink.concert_id.in_(owned_concert_ids))
+            )
         )
     ).all()
+    return [_referral_to_read(session, link) for link in links]
+
+
+def _authorize_referral_response(session: Session, link: ReferralLink, user: User) -> None:
+    if link.requested_by_invitee:
+        concert = session.get(Concert, link.concert_id)
+        if not concert or concert.agent_id != user.id:
+            raise HTTPException(status_code=404, detail="Referral request not found")
+    elif link.invitee_user_id != user.id:
+        raise HTTPException(status_code=404, detail="Referral invite not found")
 
 
 @router.post("/referrals/{referral_id}/accept", response_model=ReferralLinkRead)
 def accept_referral(
     referral_id: int,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.celebrity, RoleEnum.sales_agent, RoleEnum.agent)),
+    user: User = Depends(
+        require_role(RoleEnum.celebrity, RoleEnum.sales_agent, RoleEnum.agent, RoleEnum.manager)
+    ),
 ):
     link = session.get(ReferralLink, referral_id)
-    if not link or link.invitee_user_id != user.id or link.status != ReferralLinkStatus.pending:
-        raise HTTPException(status_code=404, detail="Referral invite not found")
+    if not link or link.status != ReferralLinkStatus.pending:
+        raise HTTPException(status_code=404, detail="Referral not found")
+    _authorize_referral_response(session, link, user)
     link.status = ReferralLinkStatus.accepted
     link.accepted_at = datetime.utcnow()
     session.add(link)
     session.commit()
     session.refresh(link)
-    return link
+    return _referral_to_read(session, link)
 
 
 @router.post("/referrals/{referral_id}/decline", response_model=ReferralLinkRead)
 def decline_referral(
     referral_id: int,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.celebrity, RoleEnum.sales_agent, RoleEnum.agent)),
+    user: User = Depends(
+        require_role(RoleEnum.celebrity, RoleEnum.sales_agent, RoleEnum.agent, RoleEnum.manager)
+    ),
 ):
     link = session.get(ReferralLink, referral_id)
-    if not link or link.invitee_user_id != user.id or link.status != ReferralLinkStatus.pending:
-        raise HTTPException(status_code=404, detail="Referral invite not found")
+    if not link or link.status != ReferralLinkStatus.pending:
+        raise HTTPException(status_code=404, detail="Referral not found")
+    _authorize_referral_response(session, link, user)
     link.status = ReferralLinkStatus.declined
     session.add(link)
     session.commit()
     session.refresh(link)
+    return _referral_to_read(session, link)
+
+
+# ---- Public agent-request response (email link, no login required) ----
+
+
+def _get_agent_request_by_code(session: Session, code: str) -> ReferralLink:
+    link = session.exec(
+        select(ReferralLink).where(
+            ReferralLink.code == code, ReferralLink.requested_by_invitee.is_(True)
+        )
+    ).first()
+    if not link:
+        raise HTTPException(status_code=404, detail="Request not found")
     return link
+
+
+@router.get("/referrals/code/{code}", response_model=AgentSellRequestRead)
+def get_agent_request_by_code(code: str, session: Session = Depends(get_session)):
+    link = _get_agent_request_by_code(session, code)
+    concert = session.get(Concert, link.concert_id)
+    agent = session.get(User, link.invitee_user_id)
+    return AgentSellRequestRead(
+        code=link.code,
+        concert_title=concert.title if concert else "",
+        venue=concert.venue if concert else "",
+        event_date=concert.event_date if concert else link.created_at,
+        agent_name=agent.full_name if agent else "An agent",
+        commission_percent=link.commission_percent,
+        status=link.status,
+    )
+
+
+@router.post("/referrals/code/{code}/accept", response_model=AgentSellRequestRead)
+def accept_agent_request_by_code(code: str, session: Session = Depends(get_session)):
+    link = _get_agent_request_by_code(session, code)
+    if link.status == ReferralLinkStatus.pending:
+        link.status = ReferralLinkStatus.accepted
+        link.accepted_at = datetime.utcnow()
+        session.add(link)
+        session.commit()
+        session.refresh(link)
+    return get_agent_request_by_code(code, session)
+
+
+@router.post("/referrals/code/{code}/decline", response_model=AgentSellRequestRead)
+def decline_agent_request_by_code(code: str, session: Session = Depends(get_session)):
+    link = _get_agent_request_by_code(session, code)
+    if link.status == ReferralLinkStatus.pending:
+        link.status = ReferralLinkStatus.declined
+        session.add(link)
+        session.commit()
+        session.refresh(link)
+    return get_agent_request_by_code(code, session)
 
 
 # ---- Orders / purchase ----

@@ -22,5 +22,6 @@ class ReferralLink(SQLModel, table=True):
     parent_referral_link_id: int | None = Field(default=None, foreign_key="referrallink.id")
     commission_percent: float
     status: ReferralLinkStatus = ReferralLinkStatus.pending
+    requested_by_invitee: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
     accepted_at: datetime | None = None

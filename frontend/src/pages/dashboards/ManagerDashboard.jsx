@@ -52,7 +52,6 @@ export default function ManagerDashboard() {
     sales_end: "",
   });
   const [categoryFlyerUploading, setCategoryFlyerUploading] = useState(false);
-  const [agentInviteForm, setAgentInviteForm] = useState({ email: "" });
   const [showScanner, setShowScanner] = useState(false);
   const [manualToken, setManualToken] = useState("");
   const [checkinResult, setCheckinResult] = useState(null);
@@ -209,17 +208,13 @@ export default function ManagerDashboard() {
     }
   }
 
-  async function inviteAgent(e) {
-    e.preventDefault();
+  async function respondToAgentRequest(referralId, action) {
     setTicketError("");
     try {
-      await client.post(`/tickets/concerts/${selectedConcertId}/referrals/agents`, {
-        email: agentInviteForm.email,
-      });
-      setAgentInviteForm({ email: "" });
+      await client.post(`/tickets/referrals/${referralId}/${action}`);
       loadTicketing(selectedConcertId);
     } catch (err) {
-      setTicketError(err.response?.data?.detail || "Could not send invite.");
+      setTicketError(err.response?.data?.detail || "Could not respond to this request.");
     }
   }
 
@@ -625,33 +620,47 @@ export default function ManagerDashboard() {
           </div>
 
           <div className="card mt-4">
-            <h3 className="font-semibold text-brand-charcoal">Invite an agent to sell tickets</h3>
+            <h3 className="font-semibold text-brand-charcoal">Agent requests</h3>
             <p className="mt-1 text-sm text-gray-500">
-              Buyers pay the listed ticket price — no markup. When an agent sells via their link,
-              they automatically earn {selectedConcert?.agent_commission_percent ?? 0}% of the
-              ticket price to their wallet; the platform keeps a fixed 7%.
+              Agents can request to help sell tickets for this event. Buyers pay the listed ticket
+              price — no markup. If you accept, the agent earns{" "}
+              {selectedConcert?.agent_commission_percent ?? 0}% of the ticket price to their wallet
+              on tickets they sell; the platform keeps a fixed 7%.
             </p>
             <div className="mt-2 space-y-2">
-              {referrals.map((r) => (
-                <div key={r.id} className="flex items-center justify-between rounded-md border border-brand-border p-2 text-sm">
-                  <span>Referral #{r.id} — {r.commission_percent}% commission</span>
-                  <span className="text-gray-500">{r.status}</span>
-                </div>
-              ))}
+              {referrals
+                .filter((r) => r.invitee_role === "agent" && r.requested_by_invitee)
+                .map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between gap-3 rounded-md border border-brand-border p-2 text-sm"
+                  >
+                    <span>
+                      {r.invitee_name || "An agent"} — {r.commission_percent}% commission
+                    </span>
+                    {r.status === "pending" ? (
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          className="btn-primary"
+                          onClick={() => respondToAgentRequest(r.id, "accept")}
+                        >
+                          Accept
+                        </button>
+                        <button
+                          className="btn-secondary"
+                          onClick={() => respondToAgentRequest(r.id, "decline")}
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="shrink-0 text-gray-500">{r.status}</span>
+                    )}
+                  </div>
+                ))}
+              {referrals.filter((r) => r.invitee_role === "agent" && r.requested_by_invitee).length ===
+                0 && <p className="text-sm text-gray-500">No agent requests yet.</p>}
             </div>
-            <form onSubmit={inviteAgent} className="mt-4 space-y-2 border-t border-brand-border pt-4">
-              <div>
-                <label className="label">Agent email</label>
-                <input
-                  type="email"
-                  required
-                  className="input-field"
-                  value={agentInviteForm.email}
-                  onChange={(e) => setAgentInviteForm({ ...agentInviteForm, email: e.target.value })}
-                />
-              </div>
-              <button type="submit" className="btn-primary">Send invite</button>
-            </form>
           </div>
 
           {analytics && (

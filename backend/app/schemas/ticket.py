@@ -53,22 +53,31 @@ class SalesAgentInviteCreate(BaseModel):
     commission_percent: float
 
 
-class AgentInviteCreate(BaseModel):
-    email: str
-
-
 class ReferralLinkRead(BaseModel):
     id: int
     concert_id: int
+    concert_title: str = ""
     code: str
     inviter_user_id: int
     invitee_role: RoleEnum
     invitee_user_id: int | None
+    invitee_name: str | None = None
     parent_referral_link_id: int | None
     commission_percent: float
     status: ReferralLinkStatus
+    requested_by_invitee: bool = False
     created_at: datetime
     accepted_at: datetime | None
+
+
+class AgentSellRequestRead(BaseModel):
+    code: str
+    concert_title: str
+    venue: str
+    event_date: datetime
+    agent_name: str
+    commission_percent: float
+    status: ReferralLinkStatus
 
 
 class TicketOrderCreate(BaseModel):
