@@ -6,6 +6,7 @@ import ShareProfileLink from "../../components/ShareProfileLink.jsx";
 import WithdrawalPanel from "../../components/WithdrawalPanel.jsx";
 import { toUtcIso } from "../../utils/datetime.js";
 import { CLOUDINARY_CONFIGURED, uploadImage } from "../../lib/cloudinary.js";
+import { googleMapsSearchUrl } from "../../utils/googleMaps.js";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -214,7 +215,15 @@ export default function AgentDashboard() {
                 <div>
                   <p className="font-medium text-brand-charcoal">{c.title}</p>
                   <p className="text-sm text-gray-500">
-                    {c.venue} · {new Date(c.event_date).toLocaleString()}
+                    <a
+                      href={googleMapsSearchUrl(c.venue)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-green hover:underline"
+                    >
+                      {c.venue}
+                    </a>{" "}
+                    · {new Date(c.event_date).toLocaleString()}
                   </p>
                 </div>
                 {myRequest ? (
@@ -253,7 +262,15 @@ export default function AgentDashboard() {
             <div key={c.id} className="card">
               <h3 className="font-semibold text-brand-charcoal">{c.title}</h3>
               <p className="text-sm text-gray-500">
-                {c.venue} · {new Date(c.event_date).toLocaleString()}
+                <a
+                  href={googleMapsSearchUrl(c.venue)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-green hover:underline"
+                >
+                  {c.venue}
+                </a>{" "}
+                · {new Date(c.event_date).toLocaleString()}
               </p>
               {c.celebrities.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">

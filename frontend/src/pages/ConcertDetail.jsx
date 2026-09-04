@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import client from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
 import ReviewSection from "../components/ReviewSection.jsx";
+import { googleMapsSearchUrl } from "../utils/googleMaps.js";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -78,7 +79,15 @@ export default function ConcertDetail() {
         )}
         <h1 className="text-2xl font-semibold text-brand-charcoal">{concert.title}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          {concert.venue} · {new Date(concert.event_date).toLocaleString()}
+          <a
+            href={googleMapsSearchUrl(concert.venue)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-green hover:underline"
+          >
+            {concert.venue}
+          </a>{" "}
+          · {new Date(concert.event_date).toLocaleString()}
         </p>
         {concert.description && <p className="mt-3 text-sm text-gray-600">{concert.description}</p>}
         {concert.celebrities.length > 0 && (

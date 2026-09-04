@@ -6,6 +6,7 @@ import QrScanner from "../../components/QrScanner.jsx";
 import WithdrawalPanel from "../../components/WithdrawalPanel.jsx";
 import { toUtcIso } from "../../utils/datetime.js";
 import { CLOUDINARY_CONFIGURED, uploadImage } from "../../lib/cloudinary.js";
+import { googleMapsSearchUrl } from "../../utils/googleMaps.js";
 
 function formatNaira(kobo) {
   return `₦${(kobo / 100).toLocaleString()}`;
@@ -387,10 +388,21 @@ export default function ManagerDashboard() {
             <label className="label">Location</label>
             <input
               required
+              placeholder="Venue name, City, State/Province, Country"
               className="input-field"
               value={ticketForm.venue}
               onChange={(e) => setTicketForm({ ...ticketForm, venue: e.target.value })}
             />
+            {ticketForm.venue.trim() && (
+              <a
+                href={googleMapsSearchUrl(ticketForm.venue.trim())}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-block text-xs text-brand-green hover:underline"
+              >
+                View on Google Maps ↗
+              </a>
+            )}
           </div>
           <div>
             <label className="label">Event date</label>
@@ -456,7 +468,15 @@ export default function ManagerDashboard() {
             <div key={c.id} className="card">
               <h3 className="font-semibold text-brand-charcoal">{c.title}</h3>
               <p className="text-sm text-gray-500">
-                {c.venue} · {new Date(c.event_date).toLocaleString()}
+                <a
+                  href={googleMapsSearchUrl(c.venue)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-green hover:underline"
+                >
+                  {c.venue}
+                </a>{" "}
+                · {new Date(c.event_date).toLocaleString()}
               </p>
               <p className="mt-1 text-xs text-gray-500">
                 Agent commission: {c.agent_commission_percent}%
