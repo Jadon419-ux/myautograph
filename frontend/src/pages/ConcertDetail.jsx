@@ -79,16 +79,20 @@ export default function ConcertDetail() {
         )}
         <h1 className="text-2xl font-semibold text-brand-charcoal">{concert.title}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          <a
-            href={googleMapsSearchUrl(concert.venue)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-brand-green hover:underline"
-          >
-            {concert.venue}
-          </a>{" "}
-          · {new Date(concert.event_date).toLocaleString()}
+          {concert.venue} · {new Date(concert.event_date).toLocaleString()}
         </p>
+        <a
+          href={googleMapsSearchUrl(concert.venue)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-brand-green hover:underline"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z" />
+            <circle cx="12" cy="10" r="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          View on Google Maps ↗
+        </a>
         {concert.description && <p className="mt-3 text-sm text-gray-600">{concert.description}</p>}
         {concert.celebrities.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
