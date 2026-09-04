@@ -1,9 +1,13 @@
+import time
+
 import httpx
 from fastapi import HTTPException
 
 from app.config import settings
 
-GEMINI_MODEL = "gemini-3.6-flash"
+RETRYABLE_STATUS_CODES = {429, 500, 503}
+
+GEMINI_MODEL = "gemini-3.1-flash-lite"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
 SYSTEM_INSTRUCTION = """You are the support assistant for My Autograph, a platform that connects \
@@ -61,25 +65,41 @@ def ask_chatbot(message: str, history: list[dict]) -> str:
             contents.append({"role": role, "parts": [{"text": text}]})
     contents.append({"role": "user", "parts": [{"text": message}]})
 
-    try:
-        response = httpx.post(
-            GEMINI_URL,
-            params={"key": settings.gemini_api_key},
-            json={
-                "contents": contents,
-                "systemInstruction": {"parts": [{"text": SYSTEM_INSTRUCTION}]},
-                "generationConfig": {"maxOutputTokens": 2048, "temperature": 0.4},
-            },
-            timeout=45,
-        )
-        response.raise_for_status()
-    except httpx.HTTPStatusError as exc:
-        if exc.response.status_code == 429:
+    payload = {
+        "contents": contents,
+        "systemInstruction": {"parts": [{"text": SYSTEM_INSTRUCTION}]},
+        "generationConfig": {"maxOutputTokens": 2048, "temperature": 0.4},
+    }
+
+    response = None
+    last_error: Exception | None = None
+    for attempt in range(2):
+        try:
+            response = httpx.post(
+                GEMINI_URL, params={"key": settings.gemini_api_key}, json=payload, timeout=45
+            )
+            response.raise_for_status()
+            last_error = None
+            break
+        except httpx.HTTPStatusError as exc:
+            last_error = exc
+            if exc.response.status_code not in RETRYABLE_STATUS_CODES or attempt == 1:
+                break
+            time.sleep(1.5)
+        except httpx.HTTPError as exc:
+            last_error = exc
+            if attempt == 1:
+                break
+            time.sleep(1.5)
+
+    if last_error is not None:
+        if isinstance(last_error, httpx.HTTPStatusError) and last_error.response.status_code in (
+            429,
+            503,
+        ):
             raise HTTPException(
                 status_code=503, detail="The assistant is busy right now - please try again shortly."
             )
-        raise HTTPException(status_code=502, detail="Could not reach the assistant. Please try again.")
-    except httpx.HTTPError:
         raise HTTPException(status_code=502, detail="Could not reach the assistant. Please try again.")
 
     data = response.json()
