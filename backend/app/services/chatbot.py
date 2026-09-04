@@ -70,7 +70,7 @@ def ask_chatbot(message: str, history: list[dict]) -> str:
                 "systemInstruction": {"parts": [{"text": SYSTEM_INSTRUCTION}]},
                 "generationConfig": {"maxOutputTokens": 2048, "temperature": 0.4},
             },
-            timeout=20,
+            timeout=45,
         )
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
