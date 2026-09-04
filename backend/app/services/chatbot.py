@@ -68,7 +68,7 @@ def ask_chatbot(message: str, history: list[dict]) -> str:
             json={
                 "contents": contents,
                 "systemInstruction": {"parts": [{"text": SYSTEM_INSTRUCTION}]},
-                "generationConfig": {"maxOutputTokens": 400, "temperature": 0.4},
+                "generationConfig": {"maxOutputTokens": 2048, "temperature": 0.4},
             },
             timeout=20,
         )
