@@ -114,6 +114,33 @@ export default function ConcertDetail() {
       <div className="card mt-6">
         <h2 className="text-lg font-semibold text-brand-charcoal">Tickets</h2>
 
+        {concert.celebrities.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-4 border-b border-brand-border pb-4">
+            {concert.celebrities.map((celeb) => (
+              <Link
+                key={celeb.id}
+                to={`/celebrities/${celeb.id}`}
+                className="flex items-center gap-2 hover:opacity-80"
+              >
+                <span className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-brand-gray">
+                  {celeb.avatar_url || celeb.profile_image_url ? (
+                    <img
+                      src={celeb.avatar_url || celeb.profile_image_url}
+                      alt={celeb.stage_name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center font-semibold text-gray-400">
+                      {celeb.stage_name?.[0]?.toUpperCase() || "?"}
+                    </span>
+                  )}
+                </span>
+                <span className="text-sm font-medium text-brand-charcoal">{celeb.stage_name}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+
         {categories.length === 0 && (
           <p className="mt-3 text-sm text-gray-500">No ticket categories available yet.</p>
         )}
