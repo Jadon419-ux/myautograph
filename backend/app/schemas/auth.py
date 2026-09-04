@@ -10,6 +10,7 @@ class UserCreate(BaseModel):
     password: str
     full_name: str
     phone_number: str
+    location: str
     role: RoleEnum
     stage_name: str | None = None
     category: str | None = None
@@ -21,6 +22,7 @@ class UserRead(BaseModel):
     email: str
     full_name: str
     phone_number: str
+    location: str
     role: RoleEnum
     avatar_url: str | None = None
     is_email_verified: bool

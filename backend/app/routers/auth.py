@@ -51,6 +51,9 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
     if not payload.phone_number or not payload.phone_number.strip():
         raise HTTPException(status_code=400, detail="Phone number is required")
 
+    if not payload.location or not payload.location.strip():
+        raise HTTPException(status_code=400, detail="Location is required")
+
     phone_number = payload.phone_number.strip()
     existing_phone = session.exec(select(User).where(User.phone_number == phone_number)).first()
     if existing_phone:
@@ -79,6 +82,7 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
         phone_number=phone_number,
+        location=payload.location.strip(),
         role=payload.role,
     )
     code = _issue_verification_code(user)

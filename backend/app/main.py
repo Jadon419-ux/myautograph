@@ -98,6 +98,7 @@ def on_startup():
                 | User.wallet_held_kobo.is_(None)
                 | User.is_email_verified.is_(None)
                 | User.phone_number.is_(None)
+                | User.location.is_(None)
             )
         ).all()
         for backfill_user in users_needing_backfill:
@@ -111,6 +112,9 @@ def on_startup():
             if backfill_user.phone_number is None:
                 # Grandfather existing accounts — phone number is only required going forward.
                 backfill_user.phone_number = ""
+            if backfill_user.location is None:
+                # Grandfather existing accounts — location is only required going forward.
+                backfill_user.location = ""
             session.add(backfill_user)
         if users_needing_backfill:
             session.commit()

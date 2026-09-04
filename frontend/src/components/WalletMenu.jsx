@@ -94,6 +94,21 @@ export default function WalletMenu() {
                   <span className="text-brand-charcoal">{user?.phone_number || "—"}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-500">Location</span>
+                  {user?.location ? (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.location)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-green hover:underline"
+                    >
+                      {user.location}
+                    </a>
+                  ) : (
+                    <span className="text-brand-charcoal">—</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-gray-500">Email</span>
                   <span className="truncate text-brand-charcoal">{user?.email}</span>
                 </div>
