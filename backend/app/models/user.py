@@ -20,7 +20,6 @@ class User(SQLModel, table=True):
     hashed_password: str
     full_name: str
     phone_number: str = ""
-    location: str = ""
     role: RoleEnum
     avatar_url: str | None = None
     wallet_balance_kobo: int = 0

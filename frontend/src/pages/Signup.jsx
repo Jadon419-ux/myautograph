@@ -22,7 +22,6 @@ export default function Signup() {
     full_name: "",
     email: "",
     phone_number: "",
-    location: "",
     password: "",
     role: initialRole,
     stage_name: "",
@@ -95,28 +94,6 @@ export default function Signup() {
           <p className="mt-1 text-xs text-gray-500">
             Used so other fans can buy tickets for you and to help verify your account.
           </p>
-        </div>
-
-        <div>
-          <label className="label" htmlFor="location">Location</label>
-          <input
-            id="location"
-            required
-            placeholder="City, State/Province, Country"
-            className="input-field"
-            value={form.location}
-            onChange={(e) => update("location", e.target.value)}
-          />
-          {form.location.trim() && (
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.location.trim())}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1 inline-block text-xs text-brand-green hover:underline"
-            >
-              View on Google Maps ↗
-            </a>
-          )}
         </div>
 
         <PasswordField
