@@ -13,9 +13,10 @@ const NAV_LINKS = [
 ];
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, authenticatorInvites } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const hasPendingInvites = authenticatorInvites.some((a) => a.status === "pending");
 
   function handleLogout() {
     setMenuOpen(false);
@@ -30,7 +31,7 @@ export default function Navbar() {
           <button
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="Toggle menu"
-            className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-brand-charcoal hover:bg-brand-gray md:hidden"
+            className="relative -ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-brand-charcoal hover:bg-brand-gray md:hidden"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-6 w-6">
               {menuOpen ? (
@@ -39,6 +40,9 @@ export default function Navbar() {
                 <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
               )}
             </svg>
+            {hasPendingInvites && !menuOpen && (
+              <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-brand-green" />
+            )}
           </button>
           <Link to="/" className="flex items-center gap-2" onClick={() => setMenuOpen(false)}>
             <img src={iconMark} alt="My Autograph" className="h-9 w-9 rounded-lg object-cover sm:h-10 sm:w-10" />

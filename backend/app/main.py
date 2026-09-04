@@ -17,6 +17,7 @@ from app.models.user import User
 from app.routers import (
     admin,
     auth,
+    authenticators,
     autographs,
     celebrities,
     chatbot,
@@ -184,6 +185,7 @@ app.include_router(star_auction.router)
 app.include_router(transport.router)
 app.include_router(withdrawals.router)
 app.include_router(chatbot.router)
+app.include_router(authenticators.router)
 
 
 @app.get("/health")

@@ -8,6 +8,7 @@ const TOKEN_KEY = "myautograph_token";
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authenticatorInvites, setAuthenticatorInvites] = useState([]);
 
   async function loadUser() {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -26,10 +27,28 @@ export function AuthProvider({ children }) {
     }
   }
 
+  async function refreshAuthenticatorInvites(currentUser) {
+    if (!currentUser) {
+      setAuthenticatorInvites([]);
+      return;
+    }
+    try {
+      const { data } = await client.get("/authenticators/mine");
+      setAuthenticatorInvites(data.filter((a) => a.invitee_user_id === currentUser.id));
+    } catch {
+      setAuthenticatorInvites([]);
+    }
+  }
+
   useEffect(() => {
     loadUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    refreshAuthenticatorInvites(user);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   async function login(email, password) {
     const body = new URLSearchParams();
@@ -61,7 +80,18 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        refreshUser,
+        authenticatorInvites,
+        refreshAuthenticatorInvites: () => refreshAuthenticatorInvites(user),
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

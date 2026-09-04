@@ -57,6 +57,10 @@ export default function ManagerDashboard() {
   const [manualToken, setManualToken] = useState("");
   const [checkinResult, setCheckinResult] = useState(null);
   const [checkinError, setCheckinError] = useState("");
+  const [authenticators, setAuthenticators] = useState([]);
+  const [authenticatorEmail, setAuthenticatorEmail] = useState("");
+  const [authenticatorError, setAuthenticatorError] = useState("");
+  const [invitingAuthenticator, setInvitingAuthenticator] = useState(false);
 
   async function loadRoster() {
     const { data } = await client.get("/managers/roster");
@@ -153,6 +157,25 @@ export default function ManagerDashboard() {
     setReferrals(refs.filter((r) => r.concert_id === concertId));
     const { data: stats } = await client.get(`/tickets/concerts/${concertId}/analytics`);
     setAnalytics(stats);
+    const { data: auths } = await client.get("/authenticators/mine");
+    setAuthenticators(auths.filter((a) => a.concert_id === concertId));
+  }
+
+  async function inviteAuthenticator(e) {
+    e.preventDefault();
+    setAuthenticatorError("");
+    setInvitingAuthenticator(true);
+    try {
+      await client.post(`/authenticators/concerts/${selectedConcertId}/invite`, {
+        email: authenticatorEmail,
+      });
+      setAuthenticatorEmail("");
+      loadTicketing(selectedConcertId);
+    } catch (err) {
+      setAuthenticatorError(err.response?.data?.detail || "Could not send invite.");
+    } finally {
+      setInvitingAuthenticator(false);
+    }
   }
 
   function selectConcert(concertId) {
@@ -684,6 +707,55 @@ export default function ManagerDashboard() {
               {referrals.filter((r) => r.invitee_role === "agent" && r.requested_by_invitee).length ===
                 0 && <p className="text-sm text-gray-500">No agent requests yet.</p>}
             </div>
+          </div>
+
+          <div className="card mt-4">
+            <h3 className="font-semibold text-brand-charcoal">Ticket authenticators</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Invite someone by email to scan and check in tickets at the venue for this event. They
+              don't need to be an agent or manager — any My Autograph account can accept.
+            </p>
+            <div className="mt-2 space-y-2">
+              {authenticators.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between gap-3 rounded-md border border-brand-border p-2 text-sm"
+                >
+                  <span>{a.invitee_name}</span>
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
+                      a.status === "accepted"
+                        ? "bg-brand-greenLight text-brand-greenDark"
+                        : a.status === "declined"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {a.status}
+                  </span>
+                </div>
+              ))}
+              {authenticators.length === 0 && (
+                <p className="text-sm text-gray-500">No ticket authenticators invited yet.</p>
+              )}
+            </div>
+            <form
+              onSubmit={inviteAuthenticator}
+              className="mt-4 flex gap-2 border-t border-brand-border pt-4"
+            >
+              <input
+                type="email"
+                required
+                placeholder="Their email address"
+                className="input-field"
+                value={authenticatorEmail}
+                onChange={(e) => setAuthenticatorEmail(e.target.value)}
+              />
+              <button type="submit" disabled={invitingAuthenticator} className="btn-primary shrink-0">
+                {invitingAuthenticator ? "Sending..." : "Invite"}
+              </button>
+            </form>
+            {authenticatorError && <p className="mt-2 text-xs text-red-600">{authenticatorError}</p>}
           </div>
 
           {analytics && (

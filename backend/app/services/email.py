@@ -132,3 +132,29 @@ def send_agent_sell_request_email(
     message["From"] = formataddr((SENDER_DISPLAY_NAME, settings.smtp_username))
     message["To"] = to_email
     _deliver(message, to_email, "Agent sell request email", f"{agent_name} -> {concert_title}")
+
+
+def send_authenticator_invite_email(
+    to_email: str,
+    invitee_name: str,
+    inviter_name: str,
+    concert_title: str,
+) -> None:
+    body = "\n".join(
+        [
+            f"Hi {invitee_name},",
+            "",
+            f"{inviter_name} has invited you to be a ticket authenticator for \"{concert_title}\" - "
+            "you'll be able to scan and check in tickets at the venue.",
+            "",
+            "Open My Autograph and check the menu to accept or decline this invite.",
+            "",
+            "- My Autograph",
+        ]
+    )
+
+    message = MIMEText(body)
+    message["Subject"] = f"You're invited to authenticate tickets for {concert_title}"
+    message["From"] = formataddr((SENDER_DISPLAY_NAME, settings.smtp_username))
+    message["To"] = to_email
+    _deliver(message, to_email, "Authenticator invite email", f"{inviter_name} -> {concert_title}")

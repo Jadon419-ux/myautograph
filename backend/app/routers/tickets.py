@@ -7,7 +7,8 @@ from sqlmodel import Session, select
 
 from app.config import settings
 from app.database import get_session
-from app.deps import require_role
+from app.deps import get_current_user, require_role
+from app.models.authenticator import AuthenticatorStatus, EventAuthenticator
 from app.models.celebrity import CelebrityProfile
 from app.models.concert import Concert
 from app.models.referral import ReferralLink, ReferralLinkStatus
@@ -526,11 +527,29 @@ def verify_ticket_public(qr_token: str, session: Session = Depends(get_session))
 # ---- Check-in ----
 
 
+def _can_authenticate_checkin(session: Session, concert_id: int, user: User) -> bool:
+    return (
+        session.exec(
+            select(EventAuthenticator).where(
+                EventAuthenticator.concert_id == concert_id,
+                EventAuthenticator.invitee_user_id == user.id,
+                EventAuthenticator.status == AuthenticatorStatus.accepted,
+            )
+        ).first()
+        is not None
+    )
+
+
 def _get_ticket_for_organizer(session: Session, qr_token: str, user: User) -> Ticket:
     ticket = session.exec(select(Ticket).where(Ticket.qr_token == qr_token)).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
-    _get_owned_concert(session, ticket.concert_id, user)
+    concert = session.get(Concert, ticket.concert_id)
+    if not concert or (
+        concert.agent_id != user.id
+        and not _can_authenticate_checkin(session, ticket.concert_id, user)
+    ):
+        raise HTTPException(status_code=404, detail="Ticket not found")
     return ticket
 
 
@@ -538,7 +557,7 @@ def _get_ticket_for_organizer(session: Session, qr_token: str, user: User) -> Ti
 def preview_ticket(
     qr_token: str,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
+    user: User = Depends(get_current_user),
 ):
     ticket = _get_ticket_for_organizer(session, qr_token, user)
     return _build_ticket_read(session, ticket)
@@ -548,7 +567,7 @@ def preview_ticket(
 def check_in_ticket(
     qr_token: str,
     session: Session = Depends(get_session),
-    user: User = Depends(require_role(RoleEnum.agent, RoleEnum.manager)),
+    user: User = Depends(get_current_user),
 ):
     ticket = _get_ticket_for_organizer(session, qr_token, user)
     if ticket.status == TicketStatus.checked_in:

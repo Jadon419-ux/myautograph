@@ -15,6 +15,7 @@ import PaystackCallback from "./pages/PaystackCallback.jsx";
 import VerifyAutograph from "./pages/VerifyAutograph.jsx";
 import TicketVerify from "./pages/TicketVerify.jsx";
 import AgentSellRequest from "./pages/AgentSellRequest.jsx";
+import AuthenticatorScan from "./pages/AuthenticatorScan.jsx";
 import Marketplace from "./pages/Marketplace.jsx";
 import ShopFromStar from "./pages/ShopFromStar.jsx";
 import ListingDetail from "./pages/ListingDetail.jsx";
@@ -49,6 +50,14 @@ export default function App() {
           <Route path="/verify" element={<VerifyAutograph />} />
           <Route path="/tickets/verify/:token" element={<TicketVerify />} />
           <Route path="/agent-requests/:code" element={<AgentSellRequest />} />
+          <Route
+            path="/authenticate/:concertId"
+            element={
+              <ProtectedRoute>
+                <AuthenticatorScan />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/shop" element={<ShopFromStar />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/marketplace/:id" element={<ListingDetail />} />

@@ -24,7 +24,7 @@ const ACCOUNT_TYPE_LABELS = {
 };
 
 export default function WalletMenu() {
-  const { user } = useAuth();
+  const { user, authenticatorInvites, refreshAuthenticatorInvites } = useAuth();
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [wallet, setWallet] = useState(null);
@@ -33,6 +33,9 @@ export default function WalletMenu() {
   const [followerCount, setFollowerCount] = useState(null);
   const [fundAmount, setFundAmount] = useState("");
   const [fundStatus, setFundStatus] = useState("");
+  const [authenticatorError, setAuthenticatorError] = useState("");
+
+  const pendingAuthenticatorInvites = authenticatorInvites.filter((a) => a.status === "pending");
 
   function loadAll() {
     client.get("/wallet/me").then(({ data }) => setWallet(data));
@@ -46,6 +49,16 @@ export default function WalletMenu() {
     const next = !open;
     setOpen(next);
     if (next && !loaded) loadAll();
+  }
+
+  async function respondToAuthenticatorInvite(id, action) {
+    setAuthenticatorError("");
+    try {
+      await client.post(`/authenticators/${id}/${action}`);
+      refreshAuthenticatorInvites();
+    } catch (err) {
+      setAuthenticatorError(err.response?.data?.detail || "Could not respond to this invite.");
+    }
   }
 
   async function topUp(e) {
@@ -71,11 +84,14 @@ export default function WalletMenu() {
       <button
         onClick={toggle}
         aria-label="Wallet menu"
-        className="flex h-9 w-9 items-center justify-center rounded-md border border-brand-border text-brand-charcoal hover:bg-brand-gray"
+        className="relative flex h-9 w-9 items-center justify-center rounded-md border border-brand-border text-brand-charcoal hover:bg-brand-gray"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
           <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
+        {pendingAuthenticatorInvites.length > 0 && (
+          <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-brand-green" />
+        )}
       </button>
 
       {open && (
@@ -109,6 +125,53 @@ export default function WalletMenu() {
                 </div>
               </div>
             </div>
+
+            {authenticatorInvites.length > 0 && (
+              <div className="mt-4 border-t border-brand-border pt-3">
+                <h3 className="text-sm font-semibold text-brand-charcoal">Ticket authenticator invites</h3>
+                {authenticatorError && (
+                  <p className="mt-1 text-xs text-red-600">{authenticatorError}</p>
+                )}
+                <div className="mt-2 space-y-2">
+                  {authenticatorInvites.map((a) => (
+                    <div key={a.id} className="rounded-md border border-brand-border p-2 text-xs">
+                      <p className="text-brand-charcoal">
+                        <span className="font-medium">{a.inviter_name}</span> invited you to
+                        authenticate tickets for <span className="font-medium">{a.concert_title}</span>
+                      </p>
+                      {a.status === "pending" && (
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            className="btn-primary flex-1 text-xs"
+                            onClick={() => respondToAuthenticatorInvite(a.id, "accept")}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            className="btn-secondary flex-1 text-xs"
+                            onClick={() => respondToAuthenticatorInvite(a.id, "decline")}
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                      {a.status === "accepted" && (
+                        <Link
+                          to={`/authenticate/${a.concert_id}`}
+                          onClick={() => setOpen(false)}
+                          className="btn-primary mt-2 block text-center text-xs"
+                        >
+                          Scan tickets
+                        </Link>
+                      )}
+                      {a.status === "declined" && (
+                        <p className="mt-1 text-gray-500">Declined</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 border-t border-brand-border pt-3">
               <h3 className="text-sm font-semibold text-brand-charcoal">Buy tickets</h3>
