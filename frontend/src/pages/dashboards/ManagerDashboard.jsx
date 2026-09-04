@@ -424,7 +424,7 @@ export default function ManagerDashboard() {
             />
           </div>
           <div>
-            <label className="label">Link your invited stars</label>
+            <label className="label">Link your invited stars (optional)</label>
             <div className="space-y-1 rounded-md border border-brand-border p-3">
               {roster.map((c) => (
                 <label key={c.id} className="flex items-center gap-2 text-sm">
@@ -437,9 +437,12 @@ export default function ManagerDashboard() {
                 </label>
               ))}
               {roster.length === 0 && (
-                <p className="text-sm text-gray-500">Onboard a celebrity first.</p>
+                <p className="text-sm text-gray-500">No celebrities onboarded yet.</p>
               )}
             </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Leave unchecked for events with no specific artist attached, like a movie screening.
+            </p>
           </div>
           <div>
             <label className="label">Agent commission % (of ticket price, on referred sales)</label>

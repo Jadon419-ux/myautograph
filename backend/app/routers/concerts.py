@@ -65,8 +65,6 @@ def create_concert(
 ):
     celebrity_ids = payload.celebrity_ids or []
 
-    if not celebrity_ids:
-        raise HTTPException(status_code=400, detail="Select at least one celebrity (star) for this event")
     for celebrity_id in celebrity_ids:
         in_roster = session.exec(
             select(ManagerRoster).where(
