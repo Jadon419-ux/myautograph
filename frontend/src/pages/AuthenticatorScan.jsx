@@ -105,8 +105,13 @@ export default function AuthenticatorScan() {
               STATUS_STYLES[result.status] || "bg-gray-100 text-gray-700"
             }`}
           >
-            {result.status === "checked_in" ? "✓ Verified" : result.status.replace("_", " ")}
+            {result.status === "checked_in" ? "✓ Checked in" : result.status.replace("_", " ")}
           </span>
+          {result.status === "checked_in" && result.checked_in_at && (
+            <p className="mt-1 text-xs text-gray-500">
+              {new Date(result.checked_in_at).toLocaleString()}
+            </p>
+          )}
 
           <div className="mt-5 space-y-2 border-t border-brand-border pt-4 text-left text-sm">
             <div className="flex justify-between">

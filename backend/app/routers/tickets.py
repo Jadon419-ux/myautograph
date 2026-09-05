@@ -571,7 +571,10 @@ def check_in_ticket(
 ):
     ticket = _get_ticket_for_organizer(session, qr_token, user)
     if ticket.status == TicketStatus.checked_in:
-        raise HTTPException(status_code=409, detail="Ticket already checked in")
+        # Already checked in - show the ticket (with its original check-in time) instead
+        # of erroring, so authenticators immediately see who this is and that they're
+        # already inside rather than a bare failure message.
+        return _build_ticket_read(session, ticket)
     if ticket.status != TicketStatus.valid:
         raise HTTPException(status_code=400, detail=f"Ticket is not valid (status: {ticket.status})")
 
