@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import logoSquare from "../assets/logo-square.jpg";
 import { BRAND } from "../brand.js";
+import HeroBackground from "../components/HeroBackground.jsx";
 import Typewriter from "../components/Typewriter.jsx";
 
 const roles = [
@@ -33,26 +34,29 @@ const roles = [
 export default function Landing() {
   return (
     <div>
-      <section className="mx-auto flex max-w-6xl flex-col items-center gap-8 px-6 py-20 text-center">
-        <img src={logoSquare} alt="My Autograph" className="h-32 w-32 rounded-full object-cover shadow-sm" />
-        <p className="text-sm italic text-brand-green">
-          <Typewriter text={BRAND.tagline} />
-        </p>
-        <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-brand-charcoal sm:text-5xl">
-          The direct line between celebrities and the fans who follow them.
-        </h1>
-        <p className="max-w-xl text-base text-gray-600">
-          My Autograph gives every celebrity a sector of their own to share autographs,
-          host live streams, and stay connected with fans — while agents and managers
-          bring the concerts and talent that keep it all running.
-        </p>
-        <div className="flex gap-4">
-          <Link to="/celebrities" className="btn-primary">
-            Browse celebrities
-          </Link>
-          <Link to="/signup" className="btn-secondary">
-            Create an account
-          </Link>
+      <section className="relative overflow-hidden">
+        <HeroBackground />
+        <div className="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-8 px-6 py-20 text-center">
+          <img src={logoSquare} alt="My Autograph" className="h-32 w-32 rounded-full object-cover shadow-sm" />
+          <p className="text-sm italic text-brand-green">
+            <Typewriter text={BRAND.tagline} />
+          </p>
+          <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-brand-charcoal sm:text-5xl">
+            The direct line between celebrities and the fans who follow them.
+          </h1>
+          <p className="max-w-xl text-base text-gray-600">
+            My Autograph gives every celebrity a sector of their own to share autographs,
+            host live streams, and stay connected with fans — while agents and managers
+            bring the concerts and talent that keep it all running.
+          </p>
+          <div className="flex gap-4">
+            <Link to="/celebrities" className="btn-primary">
+              Browse celebrities
+            </Link>
+            <Link to="/signup" className="btn-secondary">
+              Create an account
+            </Link>
+          </div>
         </div>
       </section>
 
