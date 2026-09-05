@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import client from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
 import ReviewSection from "../components/ReviewSection.jsx";
+import StreamEmbed from "../components/StreamEmbed.jsx";
 import { googleMapsSearchUrl } from "../utils/googleMaps.js";
 
 function formatNaira(kobo) {
@@ -24,6 +25,15 @@ export default function ConcertDetail() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [streams, setStreams] = useState([]);
+  const [confirmingStreamId, setConfirmingStreamId] = useState(null);
+  const [openStreamId, setOpenStreamId] = useState(null);
+  const [streamError, setStreamError] = useState("");
+  const [payingStreamId, setPayingStreamId] = useState(null);
+
+  function loadStreams() {
+    client.get(`/streams/concert/${id}`).then(({ data }) => setStreams(data));
+  }
 
   function loadAll() {
     client.get(`/concerts/${id}`).then(({ data }) => setConcert(data));
@@ -31,6 +41,22 @@ export default function ConcertDetail() {
       setCategories(data);
       if (data.length > 0) setSelectedCategoryId(String(data[0].id));
     });
+    loadStreams();
+  }
+
+  async function payForStream(streamId) {
+    setStreamError("");
+    setPayingStreamId(streamId);
+    try {
+      const { data } = await client.post(`/streams/${streamId}/purchase`);
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      }
+    } catch (err) {
+      setStreamError(err.response?.data?.detail || "Could not start payment.");
+    } finally {
+      setPayingStreamId(null);
+    }
   }
 
   useEffect(() => {
@@ -116,28 +142,115 @@ export default function ConcertDetail() {
 
         {concert.celebrities.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-4 border-b border-brand-border pb-4">
-            {concert.celebrities.map((celeb) => (
-              <Link
-                key={celeb.id}
-                to={`/celebrities/${celeb.id}`}
-                className="flex items-center gap-2 hover:opacity-80"
-              >
-                <span className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-brand-gray">
-                  {celeb.avatar_url || celeb.profile_image_url ? (
-                    <img
-                      src={celeb.avatar_url || celeb.profile_image_url}
-                      alt={celeb.stage_name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center font-semibold text-gray-400">
-                      {celeb.stage_name?.[0]?.toUpperCase() || "?"}
+            {concert.celebrities.map((celeb) => {
+              const stream = streams.find((s) => s.celebrity_id === celeb.id);
+              const locked = stream && !stream.has_access;
+              return (
+                <div key={celeb.id} className="flex flex-col gap-1">
+                  <Link to={`/celebrities/${celeb.id}`} className="flex items-center gap-2 hover:opacity-80">
+                    <span className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-brand-gray">
+                      {celeb.avatar_url || celeb.profile_image_url ? (
+                        <img
+                          src={celeb.avatar_url || celeb.profile_image_url}
+                          alt={celeb.stage_name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center font-semibold text-gray-400">
+                          {celeb.stage_name?.[0]?.toUpperCase() || "?"}
+                        </span>
+                      )}
                     </span>
+                    <span className="text-sm font-medium text-brand-charcoal">{celeb.stage_name}</span>
+                  </Link>
+
+                  {stream && (
+                    <button
+                      onClick={() => {
+                        if (locked) {
+                          setConfirmingStreamId(stream.id);
+                        } else {
+                          setOpenStreamId((current) => (current === stream.id ? null : stream.id));
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${
+                        locked
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-brand-greenLight text-brand-greenDark"
+                      }`}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`h-3.5 w-3.5 ${locked ? "animate-lock-shake" : ""}`}
+                      >
+                        {locked ? (
+                          <>
+                            <rect x="5" y="11" width="14" height="9" rx="1.5" />
+                            <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+                          </>
+                        ) : (
+                          <>
+                            <rect x="5" y="11" width="14" height="9" rx="1.5" />
+                            <path d="M8 11V7a4 4 0 0 1 7.6-1.8" />
+                          </>
+                        )}
+                      </svg>
+                      {locked
+                        ? `Livestream · ${formatNaira(stream.price_kobo)}`
+                        : stream.price_kobo > 0
+                        ? "Livestream unlocked"
+                        : "Free livestream"}
+                    </button>
                   )}
-                </span>
-                <span className="text-sm font-medium text-brand-charcoal">{celeb.stage_name}</span>
-              </Link>
-            ))}
+
+                  {confirmingStreamId === stream?.id && (
+                    <div className="mt-1 w-56 rounded-md border border-brand-border bg-white p-3 shadow-md">
+                      {streamError && <p className="mb-2 text-xs text-red-600">{streamError}</p>}
+                      {user ? (
+                        <>
+                          <p className="text-xs text-gray-600">
+                            Pay {formatNaira(stream.price_kobo)} to unlock {celeb.stage_name}'s livestream?
+                          </p>
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              className="btn-primary flex-1 text-xs"
+                              disabled={payingStreamId === stream.id}
+                              onClick={() => payForStream(stream.id)}
+                            >
+                              {payingStreamId === stream.id ? "Starting..." : "Pay"}
+                            </button>
+                            <button
+                              className="btn-secondary flex-1 text-xs"
+                              onClick={() => setConfirmingStreamId(null)}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-xs text-gray-600">
+                          <Link to="/login" className="text-brand-green hover:underline">
+                            Log in
+                          </Link>{" "}
+                          to pay and unlock this livestream.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {openStreamId === stream?.id && stream.has_access && (
+                    <div className="mt-2 w-72">
+                      <StreamEmbed url={stream.embed_url} title={stream.title} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 

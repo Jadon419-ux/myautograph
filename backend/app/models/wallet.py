@@ -25,6 +25,7 @@ class WalletTransactionType(str, Enum):
     auction_win = "auction_win"
     auction_sale = "auction_sale"
     merch_sale = "merch_sale"
+    livestream_sale = "livestream_sale"
     ticket_referral_commission = "ticket_referral_commission"
     withdrawal = "withdrawal"
 

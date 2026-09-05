@@ -7,6 +7,7 @@ export default function PaystackCallback() {
   const reference = searchParams.get("reference") || searchParams.get("trxref");
   const [status, setStatus] = useState("checking");
   const [error, setError] = useState("");
+  const [stream, setStream] = useState(null);
 
   useEffect(() => {
     if (!reference) {
@@ -18,6 +19,9 @@ export default function PaystackCallback() {
       .get("/payments/verify", { params: { reference } })
       .then(({ data }) => {
         setStatus(data.status === "paid" ? "success" : "failed");
+        if (data.stream_id) {
+          client.get(`/streams/${data.stream_id}`).then(({ data: s }) => setStream(s)).catch(() => {});
+        }
       })
       .catch((err) => {
         setStatus("error");
@@ -33,10 +37,15 @@ export default function PaystackCallback() {
           <>
             <h1 className="text-xl font-semibold text-brand-charcoal">Payment successful</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Your ticket is confirmed. You'll find it in your ticket vault.
+              {stream
+                ? "The livestream is now unlocked for you."
+                : "Your ticket is confirmed. You'll find it in your ticket vault."}
             </p>
-            <Link to="/dashboard" className="btn-primary mt-4 inline-block">
-              Go to dashboard
+            <Link
+              to={stream?.concert_id ? `/concerts/${stream.concert_id}` : "/dashboard"}
+              className="btn-primary mt-4 inline-block"
+            >
+              {stream?.concert_id ? "Back to the event" : "Go to dashboard"}
             </Link>
           </>
         )}

@@ -20,8 +20,15 @@ export default function CelebrityDashboard() {
   const [requests, setRequests] = useState([]);
   const [requestFilter, setRequestFilter] = useState("all");
   const [streams, setStreams] = useState([]);
+  const [myConcerts, setMyConcerts] = useState([]);
   const [publishForm, setPublishForm] = useState({ request_id: "", content_url: "", caption: "" });
-  const [streamForm, setStreamForm] = useState({ title: "", embed_url: "", scheduled_at: "" });
+  const [streamForm, setStreamForm] = useState({
+    title: "",
+    embed_url: "",
+    scheduled_at: "",
+    concert_id: "",
+    price_naira: "",
+  });
   const [error, setError] = useState("");
 
   const [referrals, setReferrals] = useState([]);
@@ -69,6 +76,8 @@ export default function CelebrityDashboard() {
     setRequests(incoming);
     const { data: myStreams } = await client.get(`/streams/celebrity/${me.id}`);
     setStreams(myStreams);
+    const { data: allConcerts } = await client.get("/concerts");
+    setMyConcerts(allConcerts.filter((c) => c.celebrities.some((celeb) => celeb.id === me.id)));
     const { data: myReferrals } = await client.get("/tickets/referrals/mine");
     setReferrals(myReferrals);
     const { data: issued } = await client.get("/autographs/issued");
@@ -212,8 +221,14 @@ export default function CelebrityDashboard() {
     e.preventDefault();
     setError("");
     try {
-      await client.post("/streams", { ...streamForm, scheduled_at: toUtcIso(streamForm.scheduled_at) });
-      setStreamForm({ title: "", embed_url: "", scheduled_at: "" });
+      await client.post("/streams", {
+        title: streamForm.title,
+        embed_url: streamForm.embed_url,
+        scheduled_at: toUtcIso(streamForm.scheduled_at),
+        concert_id: streamForm.concert_id ? Number(streamForm.concert_id) : null,
+        price_kobo: Math.round(Number(streamForm.price_naira || 0) * 100),
+      });
+      setStreamForm({ title: "", embed_url: "", scheduled_at: "", concert_id: "", price_naira: "" });
       loadAll();
     } catch (err) {
       setError(err.response?.data?.detail || "Could not schedule stream.");
@@ -790,6 +805,31 @@ export default function CelebrityDashboard() {
               onChange={(e) => setStreamForm({ ...streamForm, scheduled_at: e.target.value })}
             />
           </div>
+          <div>
+            <label className="label">Attach to one of your events (optional)</label>
+            <select
+              className="input-field"
+              value={streamForm.concert_id}
+              onChange={(e) => setStreamForm({ ...streamForm, concert_id: e.target.value })}
+            >
+              <option value="">Not tied to an event</option>
+              {myConcerts.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Price (₦, 0 = free)</label>
+            <input
+              type="number"
+              min="0"
+              className="input-field"
+              value={streamForm.price_naira}
+              onChange={(e) => setStreamForm({ ...streamForm, price_naira: e.target.value })}
+            />
+          </div>
           <button type="submit" className="btn-primary">Schedule stream</button>
         </form>
 
@@ -798,7 +838,12 @@ export default function CelebrityDashboard() {
             <div key={s.id} className="card flex items-center justify-between">
               <div>
                 <p className="font-medium text-brand-charcoal">{s.title}</p>
-                <p className="text-sm text-gray-500">{new Date(s.scheduled_at).toLocaleString()}</p>
+                <p className="text-sm text-gray-500">
+                  {new Date(s.scheduled_at).toLocaleString()}
+                  {s.concert_id && ` · ${myConcerts.find((c) => c.id === s.concert_id)?.title || "event"}`}
+                  {" · "}
+                  {s.price_kobo > 0 ? formatNaira(s.price_kobo) : "Free"}
+                </p>
               </div>
               <button
                 className={s.is_live ? "btn-secondary" : "btn-primary"}

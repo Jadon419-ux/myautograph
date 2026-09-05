@@ -62,6 +62,16 @@ export default function ManagerDashboard() {
   const [authenticatorError, setAuthenticatorError] = useState("");
   const [invitingAuthenticator, setInvitingAuthenticator] = useState(false);
 
+  const [streams, setStreams] = useState([]);
+  const [streamForm, setStreamForm] = useState({
+    celebrity_id: "",
+    title: "",
+    embed_url: "",
+    scheduled_at: "",
+    price_naira: "",
+  });
+  const [streamError, setStreamError] = useState("");
+
   async function loadRoster() {
     const { data } = await client.get("/managers/roster");
     setRoster(data);
@@ -159,6 +169,27 @@ export default function ManagerDashboard() {
     setAnalytics(stats);
     const { data: auths } = await client.get("/authenticators/mine");
     setAuthenticators(auths.filter((a) => a.concert_id === concertId));
+    const { data: concertStreams } = await client.get(`/streams/concert/${concertId}`);
+    setStreams(concertStreams);
+  }
+
+  async function createStream(e) {
+    e.preventDefault();
+    setStreamError("");
+    try {
+      await client.post("/streams", {
+        celebrity_id: Number(streamForm.celebrity_id),
+        concert_id: selectedConcertId,
+        title: streamForm.title,
+        embed_url: streamForm.embed_url,
+        scheduled_at: toUtcIso(streamForm.scheduled_at),
+        price_kobo: Math.round(Number(streamForm.price_naira || 0) * 100),
+      });
+      setStreamForm({ celebrity_id: "", title: "", embed_url: "", scheduled_at: "", price_naira: "" });
+      loadTicketing(selectedConcertId);
+    } catch (err) {
+      setStreamError(err.response?.data?.detail || "Could not create livestream.");
+    }
   }
 
   async function inviteAuthenticator(e) {
@@ -756,6 +787,98 @@ export default function ManagerDashboard() {
               </button>
             </form>
             {authenticatorError && <p className="mt-2 text-xs text-red-600">{authenticatorError}</p>}
+          </div>
+
+          <div className="card mt-4">
+            <h3 className="font-semibold text-brand-charcoal">Star livestreams</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Add a livestream for one of the stars tagged in this event. Set a price to charge
+              fans to unlock it, or leave it at ₦0 for a free stream.
+            </p>
+            <div className="mt-2 space-y-2">
+              {streams.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between gap-3 rounded-md border border-brand-border p-2 text-sm"
+                >
+                  <div>
+                    <p className="font-medium text-brand-charcoal">{s.title}</p>
+                    <p className="text-xs text-gray-500">
+                      {selectedConcert?.celebrities.find((c) => c.id === s.celebrity_id)?.stage_name}
+                      {" · "}
+                      {new Date(s.scheduled_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-gray-500">
+                    {s.price_kobo > 0 ? formatNaira(s.price_kobo) : "Free"}
+                  </span>
+                </div>
+              ))}
+              {streams.length === 0 && <p className="text-sm text-gray-500">No livestreams added yet.</p>}
+            </div>
+
+            {selectedConcert?.celebrities.length > 0 ? (
+              <form onSubmit={createStream} className="mt-4 space-y-2 border-t border-brand-border pt-4">
+                {streamError && <p className="text-sm text-red-600">{streamError}</p>}
+                <div>
+                  <label className="label">Star</label>
+                  <select
+                    required
+                    className="input-field"
+                    value={streamForm.celebrity_id}
+                    onChange={(e) => setStreamForm({ ...streamForm, celebrity_id: e.target.value })}
+                  >
+                    <option value="">Select a star</option>
+                    {selectedConcert.celebrities.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.stage_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Title</label>
+                  <input
+                    required
+                    className="input-field"
+                    value={streamForm.title}
+                    onChange={(e) => setStreamForm({ ...streamForm, title: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="label">Embed URL (YouTube, Twitch, Vimeo)</label>
+                  <input
+                    required
+                    className="input-field"
+                    value={streamForm.embed_url}
+                    onChange={(e) => setStreamForm({ ...streamForm, embed_url: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="label">Scheduled at</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    className="input-field"
+                    value={streamForm.scheduled_at}
+                    onChange={(e) => setStreamForm({ ...streamForm, scheduled_at: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="label">Price (₦, 0 = free)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="input-field"
+                    value={streamForm.price_naira}
+                    onChange={(e) => setStreamForm({ ...streamForm, price_naira: e.target.value })}
+                  />
+                </div>
+                <button type="submit" className="btn-primary">Add livestream</button>
+              </form>
+            ) : (
+              <p className="mt-4 text-sm text-gray-500">Tag a star on this event first to add a livestream.</p>
+            )}
           </div>
 
           {analytics && (

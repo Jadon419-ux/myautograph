@@ -110,3 +110,26 @@ body {
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
+
+@keyframes lock-shake {
+  0%, 90%, 100% {
+    transform: rotate(0deg);
+  }
+  92% {
+    transform: rotate(-12deg);
+  }
+  94% {
+    transform: rotate(10deg);
+  }
+  96% {
+    transform: rotate(-8deg);
+  }
+  98% {
+    transform: rotate(6deg);
+  }
+}
+
+.animate-lock-shake {
+  animation: lock-shake 2.6s ease-in-out infinite;
+  transform-origin: 50% 20%;
+}

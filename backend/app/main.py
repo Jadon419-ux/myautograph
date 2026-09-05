@@ -11,6 +11,7 @@ from app.models.autograph import Autograph, AutographMedium, AutographRequest, A
 from app.models.celebrity import CelebrityProfile, VerificationStatus
 from app.models.concert import Concert
 from app.models.referral import ReferralLink
+from app.models.stream import Stream
 from app.models.ticket_category import TicketCategory
 from app.models.ticket_order import TicketOrder
 from app.models.user import User
@@ -164,6 +165,15 @@ def on_startup():
             link.requested_by_invitee = False
             session.add(link)
         if referrals_needing_backfill:
+            session.commit()
+
+        streams_needing_backfill = session.exec(
+            select(Stream).where(Stream.price_kobo.is_(None))
+        ).all()
+        for stream in streams_needing_backfill:
+            stream.price_kobo = 0
+            session.add(stream)
+        if streams_needing_backfill:
             session.commit()
 
 

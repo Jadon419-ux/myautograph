@@ -11,14 +11,17 @@ from app.deps import get_current_user
 from app.models.ticket_order import TicketOrder
 from app.models.marketplace import MarketplaceOrder
 from app.models.merchandise import MerchandiseOrder
+from app.models.stream_order import StreamAccessOrder
 from app.models.user import User
 from app.models.wallet import WalletFundingOrder
 from app.schemas.marketplace import MarketplaceOrderRead
+from app.schemas.stream import StreamAccessOrderRead
 from app.schemas.ticket import TicketOrderRead
 from app.schemas.wallet import WalletFundingOrderRead
 from app.services.marketplace import verify_and_finalize_marketplace_order
 from app.services.merchandise import order_to_read, verify_and_finalize_merchandise_order
 from app.services.paystack import verify_and_finalize
+from app.services.streams import verify_and_finalize_stream_order
 from app.services.wallet import verify_and_finalize_wallet_funding
 from app.services.withdrawal import finalize_transfer_webhook
 
@@ -40,6 +43,10 @@ def _finalize_by_reference(session: Session, reference: str):
         select(MerchandiseOrder).where(MerchandiseOrder.paystack_reference == reference)
     ).first():
         return verify_and_finalize_merchandise_order(session, reference), "merchandise"
+    if session.exec(
+        select(StreamAccessOrder).where(StreamAccessOrder.paystack_reference == reference)
+    ).first():
+        return verify_and_finalize_stream_order(session, reference), "stream"
     raise HTTPException(status_code=404, detail="Order not found")
 
 
@@ -59,6 +66,8 @@ def verify_payment(
         return WalletFundingOrderRead(**order.model_dump(), authorization_url=None)
     if kind == "merchandise":
         return order_to_read(session, order)
+    if kind == "stream":
+        return StreamAccessOrderRead(**order.model_dump(), authorization_url=None)
     return MarketplaceOrderRead(**order.model_dump(), authorization_url=None)
 
 
