@@ -86,55 +86,109 @@ function Doodle({ type, className = "", style }) {
           <path d="M2 15c2-3 4-3 6 0s4 3 6 0 4-3 6 0" />
         </svg>
       );
+    case "umbrella":
+      return (
+        <svg {...common}>
+          <path d="M3 12a9 9 0 0118 0z" />
+          <path d="M12 12v7a2 2 0 01-4 0" />
+        </svg>
+      );
+    case "moon":
+      return (
+        <svg {...common}>
+          <path d="M20 14.5A8.5 8.5 0 019.5 4 8.5 8.5 0 1020 14.5z" />
+        </svg>
+      );
+    case "flower":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="2.2" />
+          <circle cx="12" cy="6" r="2.2" />
+          <circle cx="12" cy="18" r="2.2" />
+          <circle cx="6" cy="12" r="2.2" />
+          <circle cx="18" cy="12" r="2.2" />
+        </svg>
+      );
+    case "spark":
+      return (
+        <svg {...common}>
+          <path d="M12 3v5M12 16v5M3 12h5M16 12h5" />
+        </svg>
+      );
     default:
       return null;
   }
 }
 
-const DOODLES = [
-  { type: "heart", top: "6%", left: "23%", size: 20, rot: -8, tone: "light" },
-  { type: "smiley", top: "16%", left: "29%", size: 26, rot: 6, tone: "light" },
-  { type: "star", top: "13%", left: "17%", size: 18, rot: 10, tone: "light" },
-  { type: "cloud", top: "22%", left: "66%", size: 30, rot: 0, tone: "dark" },
-  { type: "note", top: "14%", left: "88%", size: 22, rot: -6, tone: "dark" },
-  { type: "heart", top: "16%", left: "81%", size: 16, rot: 12, tone: "light" },
-  { type: "calendar", top: "34%", left: "15%", size: 30, rot: -4, tone: "dark" },
-  { type: "planet", top: "40%", left: "3%", size: 34, rot: 0, tone: "light" },
-  { type: "star", top: "56%", left: "24%", size: 20, rot: 8, tone: "dark" },
-  { type: "smiley", top: "64%", left: "10%", size: 22, rot: -4, tone: "dark" },
-  { type: "plus", top: "24%", left: "40%", size: 14, rot: 0, tone: "dark" },
-  { type: "bolt", top: "62%", left: "74%", size: 24, rot: 6, tone: "dark" },
-  { type: "bubble", top: "70%", left: "90%", size: 28, rot: -6, tone: "light" },
-  { type: "star", top: "3%", left: "48%", size: 16, rot: 0, tone: "dark" },
-  { type: "wave", top: "80%", left: "48%", size: 26, rot: 0, tone: "dark" },
-  { type: "heart", top: "88%", left: "13%", size: 18, rot: -10, tone: "dark" },
-  { type: "star", top: "92%", left: "5%", size: 16, rot: 4, tone: "dark" },
-  { type: "plus", top: "88%", left: "76%", size: 14, rot: 0, tone: "dark" },
-  { type: "note", top: "90%", left: "63%", size: 20, rot: 8, tone: "dark" },
-  { type: "cloud", top: "5%", left: "6%", size: 24, rot: 0, tone: "light" },
+const ICON_TYPES = [
+  "heart",
+  "star",
+  "smiley",
+  "cloud",
+  "note",
+  "plus",
+  "bolt",
+  "planet",
+  "bubble",
+  "calendar",
+  "wave",
+  "umbrella",
+  "moon",
+  "flower",
+  "spark",
 ];
+
+function makeDoodles() {
+  const layout = [
+    [6, 23], [16, 29], [13, 17], [22, 66], [14, 88], [16, 81], [34, 15], [40, 3],
+    [56, 24], [64, 10], [24, 40], [62, 74], [70, 90], [3, 48], [80, 48], [88, 13],
+    [92, 5], [88, 76], [90, 63], [5, 6], [9, 60], [11, 92], [28, 78], [45, 8],
+    [50, 92], [72, 34], [78, 58], [33, 48], [58, 62], [20, 4], [4, 35], [96, 30],
+    [95, 62], [42, 88], [66, 18], [30, 90], [83, 40], [18, 55], [48, 20], [60, 4],
+  ];
+  return layout.map(([top, left], i) => ({
+    type: ICON_TYPES[i % ICON_TYPES.length],
+    top: `${top}%`,
+    left: `${left}%`,
+    size: 14 + ((i * 7) % 20),
+    rot: ((i * 37) % 40) - 20,
+    tone: top < 30 && (left < 22 || left > 78) ? "light" : "dark",
+    duration: 4 + (i % 5),
+    delay: (i % 10) * 0.6,
+    opacity: 0.28 + ((i % 4) * 0.06),
+  }));
+}
+
+const DOODLES = makeDoodles();
 
 export default function HeroBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <div className="absolute inset-0 bg-[#F7F4E6]" />
 
-      <div className="absolute -top-28 -left-28 h-72 w-72 rounded-[60%_40%_70%_30%/60%_30%_70%_40%] bg-gradient-to-br from-brand-green to-emerald-300 opacity-90 sm:h-96 sm:w-96" />
-      <div className="absolute -top-32 -right-32 h-80 w-[26rem] rounded-[35%_65%_30%_70%/50%_60%_40%_50%] bg-gradient-to-bl from-brand-green via-emerald-400 to-emerald-300 opacity-95 sm:h-[26rem] sm:w-[34rem]" />
-      <div className="absolute -bottom-16 -left-10 h-36 w-36 rounded-[50%_50%_60%_40%/40%_60%_40%_60%] bg-gradient-to-tr from-emerald-300 to-brand-green opacity-70" />
-      <div className="absolute -bottom-28 -right-20 h-64 w-64 rounded-[55%_45%_45%_55%/55%_45%_55%_45%] bg-gradient-to-tl from-brand-green to-emerald-300 opacity-90 sm:h-80 sm:w-80" />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle 280px at 0% 0%, #2E7D32 0%, #43A047 18%, rgba(67,160,71,0) 100%), " +
+            "radial-gradient(circle 300px at 100% 0%, #2E7D32 0%, #4CAF50 20%, rgba(76,175,80,0) 100%), " +
+            "radial-gradient(circle 170px at 0% 100%, #43A047 0%, rgba(67,160,71,0) 100%), " +
+            "radial-gradient(circle 220px at 100% 100%, #2E7D32 0%, #43A047 16%, rgba(67,160,71,0) 100%)",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
 
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1200 800" preserveAspectRatio="none" fill="none">
         <path
           d="M1050 0C1000 90 1150 160 1120 260C1090 360 980 380 1010 480"
           stroke="white"
-          strokeOpacity="0.55"
+          strokeOpacity="0.5"
           strokeWidth="2"
         />
         <path
           d="M0 40C60 110 180 90 160 190C140 290 40 300 70 380"
           stroke="white"
-          strokeOpacity="0.4"
+          strokeOpacity="0.35"
           strokeWidth="2"
         />
       </svg>
@@ -143,13 +197,16 @@ export default function HeroBackground() {
         <Doodle
           key={i}
           type={d.type}
-          className={d.tone === "light" ? "absolute text-white/50" : "absolute text-brand-green/25"}
+          className={`animate-doodle-twinkle absolute ${d.tone === "light" ? "text-white" : "text-brand-green"}`}
           style={{
             top: d.top,
             left: d.left,
             width: d.size,
             height: d.size,
-            transform: `rotate(${d.rot}deg)`,
+            "--doodle-rot": `${d.rot}deg`,
+            "--doodle-opacity": d.opacity,
+            animationDuration: `${d.duration}s`,
+            animationDelay: `${d.delay}s`,
           }}
         />
       ))}
