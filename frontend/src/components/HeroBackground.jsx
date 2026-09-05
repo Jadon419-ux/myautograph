@@ -164,7 +164,7 @@ const DOODLES = makeDoodles();
 export default function HeroBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute inset-0 bg-[#F7F4E6]" />
+      <div className="absolute inset-0 bg-[#F7F4E6] dark:bg-[#121214]" />
 
       <div
         className="absolute inset-0"

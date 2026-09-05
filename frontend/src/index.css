@@ -26,6 +26,74 @@ body {
   @apply mb-1 block text-sm font-medium text-brand-charcoal;
 }
 
+.dark body {
+  background-color: #121214;
+  color: #f3f4f6;
+}
+
+.dark .bg-white {
+  background-color: #1e1e21;
+}
+
+.dark .bg-brand-gray {
+  background-color: #0e0e10;
+}
+
+.dark .bg-gray-100 {
+  background-color: #28282c;
+}
+
+.dark .text-brand-charcoal {
+  color: #f3f4f6;
+}
+
+.dark .text-gray-700 {
+  color: #e5e7eb;
+}
+
+.dark .text-gray-600 {
+  color: #d1d5db;
+}
+
+.dark .text-gray-500 {
+  color: #9ca3af;
+}
+
+.dark .text-gray-400 {
+  color: #6b7280;
+}
+
+.dark .text-gray-300 {
+  color: #4b5563;
+}
+
+.dark .border-brand-border {
+  border-color: #3a3a3e;
+}
+
+.dark .border-gray-200 {
+  border-color: #3a3a3e;
+}
+
+.dark .btn-secondary {
+  border-color: #4b4b4f;
+  color: #f3f4f6;
+}
+
+.dark .btn-secondary:hover {
+  background-color: #f3f4f6;
+  color: #121214;
+}
+
+.dark .input-field {
+  background-color: #1e1e21;
+  color: #f3f4f6;
+}
+
+.dark .input-field::placeholder {
+  color: #6b7280;
+}
+
 @keyframes doodle-twinkle {
   0%, 100% {
     opacity: 0;

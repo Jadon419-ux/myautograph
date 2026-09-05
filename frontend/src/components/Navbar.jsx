@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 import iconMark from "../assets/icon-mark.png";
+import ThemeToggle from "./ThemeToggle.jsx";
 import WalletMenu from "./WalletMenu.jsx";
 
 const NAV_LINKS = [
@@ -80,6 +81,7 @@ export default function Navbar() {
               <button onClick={handleLogout} className="btn-secondary">
                 Log out
               </button>
+              <ThemeToggle />
             </>
           ) : (
             <>
@@ -89,11 +91,13 @@ export default function Navbar() {
               <Link to="/signup" className="btn-primary">
                 Sign up
               </Link>
+              <ThemeToggle />
             </>
           )}
         </nav>
 
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-1 md:hidden">
+          <ThemeToggle />
           {user ? (
             <WalletMenu />
           ) : (
